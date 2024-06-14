@@ -1,0 +1,30 @@
+<Crn〉 ::= 'crn = {'〈RootSList〉'}'
+〈RootSList〉 ::= 〈RootS〉
+| 〈RootS〉 ',' 〈RootSList〉
+〈RootS〉 ::= 〈ConcS〉
+| 〈StepS〉
+〈ConcS〉 ::=
+'conc ['〈species〉','〈number〉']'
+〈StepS〉 ::= 'step ['CommandSList']'
+〈CommandSList〉 ::= 〈CommandS〉
+| 〈CommandS〉 ',' 〈CommandSList〉
+〈CommandS〉 ::= 〈RxnS〉
+| 〈ModuleS〉
+| 〈ConditionalS〉
+〈RxnS〉 ::= 'rxn['〈Expr〉','〈Expr〉','〈number〉']'
+〈ModuleS〉 ::= 'ld ['〈species〉','〈species〉']'
+| 'add ['〈species〉','〈species〉','〈species〉']'
+| 'sub ['〈species〉','〈species〉','〈species〉']'
+| 'mul ['〈species〉','〈species〉','〈species〉']'
+| 'div ['〈species〉','〈species〉','〈species〉']'
+| 'sqrt ['〈species〉','〈species〉']'
+| 'cmp ['〈species〉','〈species〉']'
+〈ConditionalS〉 ::=
+'ifGT ['〈CommandSList〉']'
+| 'ifGE ['〈CommandSList〉']'
+| 'ifEQ ['〈CommandSList〉']'
+| 'ifLT ['〈CommandSList〉']'
+| 'ifLE ['〈CommandSList〉']'
+〈Expr〉 ::= 〈species〉 { '+' 〈species〉 }
+〈number〉 ::= ([^0]([0-9])+)|0
+〈species〉::= ([A-Za-z0-9])+
