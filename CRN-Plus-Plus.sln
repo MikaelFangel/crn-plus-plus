@@ -3,6 +3,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{EB2B5F05-AFDB-4255-8273-0158AA4053CF}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "crncc", "src\crncc\crncc.fsproj", "{75CE199E-EB55-4ACF-8471-80221F27E5D4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{91A3B1C7-4F31-4588-A095-92619F99C1CB}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "crncc_test", "test\crncc_test\crncc_test.fsproj", "{E1155307-1AB3-4536-AFFB-F889E9BF2451}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -10,5 +18,19 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{75CE199E-EB55-4ACF-8471-80221F27E5D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75CE199E-EB55-4ACF-8471-80221F27E5D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75CE199E-EB55-4ACF-8471-80221F27E5D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75CE199E-EB55-4ACF-8471-80221F27E5D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1155307-1AB3-4536-AFFB-F889E9BF2451}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1155307-1AB3-4536-AFFB-F889E9BF2451}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1155307-1AB3-4536-AFFB-F889E9BF2451}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1155307-1AB3-4536-AFFB-F889E9BF2451}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{75CE199E-EB55-4ACF-8471-80221F27E5D4} = {EB2B5F05-AFDB-4255-8273-0158AA4053CF}
+		{E1155307-1AB3-4536-AFFB-F889E9BF2451} = {91A3B1C7-4F31-4588-A095-92619F99C1CB}
 	EndGlobalSection
 EndGlobal
