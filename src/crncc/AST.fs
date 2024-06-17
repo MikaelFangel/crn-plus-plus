@@ -1,14 +1,26 @@
 module CRN.AST
 
+[<RequireQualifiedAccess>]
 type SpeciesS = string
-type PNumberS = PNumber of float
 
-type ConcS = Conc of SpeciesS * PNumberS
+[<RequireQualifiedAccess>]
+type PNumberS = float
 
-type ExprS = Expr of list<SpeciesS>
+[<RequireQualifiedAccess>]
+type ValueS =
+    | Literal of string
+    | Number of PNumberS
 
-type ReactionS = Reaction of ExprS * ExprS * PNumberS
+[<RequireQualifiedAccess>]
+type ConcS = SpeciesS * ValueS
 
+[<RequireQualifiedAccess>]
+type ExprS = list<SpeciesS>
+
+[<RequireQualifiedAccess>]
+type ReactionS = ExprS * ExprS * PNumberS
+
+[<RequireQualifiedAccess>]
 type ModuleS =
     | Ld of SpeciesS * SpeciesS
     | Add of SpeciesS * SpeciesS * SpeciesS
@@ -18,6 +30,7 @@ type ModuleS =
     | Sqrt of SpeciesS * SpeciesS
     | Cmp of SpeciesS * SpeciesS
 
+[<RequireQualifiedAccess>]
 type ConditionS =
     | Gt of CommandS list
     | Ge of CommandS list
@@ -30,10 +43,13 @@ and CommandS =
     | Module of ModuleS
     | Condition of ConditionS
 
-type StepS = Step of list<CommandS>
-
+[<RequireQualifiedAccess>]
 type RootS =
     | Conc of ConcS
-    | Step of StepS
+    | Step of CommandS list
 
-type CrnS = Crn of list<RootS>
+[<RequireQualifiedAccess>]
+type CrnS = list<RootS>
+
+type UntypedAST = CrnS
+type TypedAST = CrnS
