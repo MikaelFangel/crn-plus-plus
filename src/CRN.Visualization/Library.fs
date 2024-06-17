@@ -20,9 +20,9 @@ let internal plotSpecies (species, points) =
     let y = points |> List.map snd
     Chart.Line(x = x, y = y, Name = species, ShowMarkers = false)
 
-// Plot the state of a CRN up to a given limit
-let plotState limit state =
-    match Seq.tryHead (state: State) with
+// PLost the state of a CRN up to a given limit with a specific size
+let plotStateWithSize (width: float) (height: float) limit (state: State) =
+    match Seq.tryHead state with
     | Some(s) ->
         let species = s |> snd |> Map.keys |> Seq.toList
 
@@ -30,5 +30,10 @@ let plotState limit state =
         |> List.map (convertState limit state)
         |> List.map plotSpecies
         |> Chart.combine
+        |> Chart.withSize (width, height)
         |> Chart.show
     | None -> failwith "State is empty"
+
+// Plot the state of a CRN up to a given limit
+let plotState limit state =
+    plotStateWithSize 1200.0 800.0 limit state
