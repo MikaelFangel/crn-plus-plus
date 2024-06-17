@@ -18,10 +18,13 @@ let private identifier =
     let isChar c = isLetter c || isDigit c || c = '_'
     many1Satisfy2L isFirstChar isChar "identifier" .>> ws
 
-let private pspecies = identifier .>> ws |>> SpeciesS
-let private pnumber = float_ws |>> PNumber
+let private pspecies = identifier |>> SpeciesS
+let private pconst = identifier
 
-let private pexpr = sepBy pspecies (str_ws "+") .>> ws |>> Expr
+//let private pnumber = float_ws |>> PNumberS
+let private pnumber = float_ws
+
+let private pexpr = sepBy pspecies (str_ws "+") .>> ws // |>> AST.ExprS
 
 let private start_bracket bcopen start = str_ws start .>> str_ws bcopen
 
@@ -35,8 +38,10 @@ let private brackets2 popen pclose t1 t2 cons =
 let private brackets3 popen pclose t1 t2 t3 cons =
     pipe3 (popen >>. t1) (comma >>. t2) (comma >>. t3 .>> pclose) (fun v1 v2 v3 -> cons (v1, v2, v3))
 
+let pvalue = choice [pconst |>> ValueS.Literal; pnumber |>> ValueS.Number]
+
 let private pconc =
-    brackets2 (start_bracket "[" "conc") (end_bracket "]") pspecies pnumber ConcS.Conc
+    brackets2 (start_bracket "[" "conc") (end_bracket "]") pspecies pvalue  ConcS
 
 let private brackets3species name =
     brackets3 (start_bracket "[" name) (end_bracket "]") pspecies pspecies pspecies
@@ -44,13 +49,13 @@ let private brackets3species name =
 let private brackets2species name =
     brackets2 (start_bracket "[" name) (end_bracket "]") pspecies pspecies
 
-let private pmoduleld = brackets2species "ld" Ld
-let private pmoduleadd = brackets3species "add" Add
-let private pmodulesub = brackets3species "sub" Sub
-let private pmodulemul = brackets3species "mul" Mul
-let private pmodulediv = brackets3species "div" Div
-let private pmodulesqrt = brackets2species "sqrt" Sqrt
-let private pmodulecmp = brackets2species "cmp" Cmp
+let private pmoduleld = brackets2species "ld" ModuleS.Ld
+let private pmoduleadd = brackets3species "add" ModuleS.Add
+let private pmodulesub = brackets3species "sub" ModuleS.Sub
+let private pmodulemul = brackets3species "mul" ModuleS.Mul
+let private pmodulediv = brackets3species "div" ModuleS.Div
+let private pmodulesqrt = brackets2species "sqrt" ModuleS.Sqrt
+let private pmodulecmp = brackets2species "cmp" ModuleS.Cmp
 
 let private pmodule =
     choice
@@ -63,7 +68,7 @@ let private pmodule =
           pmodulecmp ]
 
 let private prxn =
-    brackets3 (start_bracket "[" "rxn") (end_bracket "]") pexpr pexpr pnumber ReactionS.Reaction
+    brackets3 (start_bracket "[" "rxn") (end_bracket "]") pexpr pexpr pnumber ReactionS
 
 let private listparser popen pclose listelem =
     between popen pclose (sepBy listelem (str_ws ","))
@@ -84,30 +89,51 @@ let private commandclose = str_ws "}" .>> str_ws "]"
 let private pcommandlist start =
     listparser (commandopen start) commandclose pcommand
 
-let private pcmdif = pcommandlist "ifGT" |>> Gt
-let private pcmdge = pcommandlist "ifGE" |>> Ge
-let private pcmdeq = pcommandlist "ifEQ" |>> Eq
-let private pcmdlt = pcommandlist "ifLT" |>> Lt
-let private pcmdle = pcommandlist "ifLE" |>> Le
+let private pcmdif = pcommandlist "ifGT" |>> ConditionS.Gt
+let private pcmdge = pcommandlist "ifGE" |>> ConditionS.Ge
+let private pcmdeq = pcommandlist "ifEQ" |>> ConditionS.Eq
+let private pcmdlt = pcommandlist "ifLT" |>> ConditionS.Lt
+let private pcmdle = pcommandlist "ifLE" |>> ConditionS.Le
 
 pconref.Value <- choice [ pcmdif; pcmdge; pcmdeq; pcmdlt; pcmdle ]
 
-let private pstep = pcommandlist "step" |>> StepS.Step
+let private pstep = pcommandlist "step" |>> RootS.Step
 
-let private proot = choice [ pstep |>> RootS.Step; pconc |>> RootS.Conc ]
+let private proot = choice [ pstep; pconc |>> RootS.Conc ]
 
 let private crnopen = str_ws "crn" >>. str_ws "=" .>> str_ws "{"
 
 let private crnclose = str_ws "}"
 let private curlyparser = listparser crnopen crnclose
-let private pcrn = ws >>. curlyparser proot .>> eof |>> Crn
-
+let private pcrn = ws >>. curlyparser proot .>> eof
 
 let tryParse str =
     let result = run pcrn str
-
+    
     match result with
     | Success(output, _, _) -> Some(output)
     | Failure(errorMsg, _, _) ->
         printfn "Failure: %s" errorMsg
         None
+
+module RXN =
+    let private rxncommand = prxn |>> CommandS.Reaction
+
+    let private pcommandlist start =
+        listparser (commandopen start) commandclose rxncommand
+
+    let private pstep = pcommandlist "step"
+
+    let private proot = choice [ pstep |>> RootS.Step; pconc |>> RootS.Conc ]
+
+    let private pcrnrxn = ws >>. curlyparser proot .>> eof
+
+    let tryParse str: Option<UntypedAST> =
+        let result = run pcrn str
+
+        match result with
+        | Success(output, _, _) -> Some(output)
+        | Failure(errorMsg, _, _) ->
+            printfn "Failure: %s" errorMsg
+            None
+    
