@@ -8,7 +8,7 @@ type State = seq<int * Map<string, float>>
 let internal convertState limit (state: State) species =
     let points =
         state
-        |> Seq.takeWhile (fun s -> fst s <= limit)
+        |> Seq.take limit
         |> Seq.map (fun s -> (fst s, (snd s).[species]))
         |> Seq.toList
 
