@@ -22,7 +22,7 @@ let internal plotSpecies (species, points) =
 
 // Plot the state of a CRN up to a given limit
 let plotState limit state =
-    match Seq.tryHead state with
+    match Seq.tryHead (state: State) with
     | Some(s) ->
         let species = s |> snd |> Map.keys |> Seq.toList
 
