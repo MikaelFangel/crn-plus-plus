@@ -10,7 +10,7 @@ crn = {
         add[divisor2, four, divisor2Next],
         sub[factor1, factor2, factor],
         add[pi, factor, piNext]
-    }]
+    }],
     step[{
         ld[divisor1Next, divisor1],
         ld[divisor2Next, divisor2],

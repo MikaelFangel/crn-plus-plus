@@ -7,6 +7,6 @@ crn = {
     }],
     step[{
         ifLT[{ ld[znext, z] }],
-        ifGE[{ kd[z, out] }]
+        ifGE[{ ld[z, out] }]
     }]
 }

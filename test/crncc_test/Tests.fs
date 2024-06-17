@@ -1,25 +1,49 @@
 module Tests
 
 open Xunit
+open System
 open CRN.Parser
 
 
-let example =
-    "crn = { 
-    conc[c, 5.0], conc[cInitial, 4.0],
-    conc[one, 1], conc[zero, 0],
-    step[{
-        sub[c, one, cnext],
-        cmp[c, zero]
-    }],
-    step[{
-        ifGT[{ ld[cnext, c] }],
-        ifLE[{ ld[cInitial, c] }]
-    }]
-}"
+let getTestFile name =
+    let path = System.IO.Path.Combine("../../../../../examples/", name)
+    IO.File.ReadAllText path
+
+let testParser name =
+    let file = getTestFile name
+    tryParse file
+
 
 [<Fact>]
-let ``My test`` () =
+let ``Parser: counter.crn`` () =
+    let result = testParser "counter.crn"
+    Assert.True(result.IsSome, result.ToString())
 
-    let maybeast = tryParse example
-    Assert.True(maybeast.IsSome)
+[<Fact>]
+let ``Parser: division.crn`` () =
+    Assert.True((testParser "division.crn").IsSome)
+
+[<Fact>]
+let ``Parser: euler.crn`` () =
+    Assert.True((testParser "euler.crn").IsSome)
+
+[<Fact>]
+let ``Parser: gcd.crn`` () =
+    Assert.True((testParser "gcd.crn").IsSome)
+
+[<Fact>]
+let ``Parser: isqrt.crn`` () =
+    Assert.True((testParser "isqrt.crn").IsSome)
+
+[<Fact>]
+let ``Parser: pi.crn`` () =
+    let result = testParser "pi.crn"
+    Assert.True(result.IsSome, result.ToString())
+
+[<Fact>]
+let ``Parser: subalt.crn`` () =
+    Assert.True((testParser "subalt.crn").IsSome)
+
+[<Fact>]
+let ``Parser: factorial.crn`` () =
+    Assert.True((testParser "factorial.crn").IsSome)
