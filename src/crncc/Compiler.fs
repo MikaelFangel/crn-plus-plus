@@ -29,7 +29,7 @@ let compileModule (mods: ModuleS) =
     | ModuleS.Mul(a, b, c) -> [ createReaction [ a; b ] [ a; b; c ]; createReaction [ c ] [] ]
     | ModuleS.Div(a, b, c) -> [ createReaction [ a ] [ a; c ]; createReaction [ b; c ] [ b ] ]
     | ModuleS.Sqrt(a, b) -> [ createReaction [ a ] [ a; b ]; createReactionWRate 0.5 [ b; b ] [] ]
-    | ModuleS.Cmp(a, b) -> failwith "not implemented"
+    | ModuleS.Cmp(_, _) -> []
 
 let rec compileCommand (com: CommandS) =
     match com with
