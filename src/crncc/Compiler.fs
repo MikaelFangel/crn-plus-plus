@@ -44,7 +44,7 @@ and compileCondition (cond: ConditionS) =
 let compileRootS (conc, step) (root: RootS) =
     match root with
     | RootS.Conc(c) -> (c :: conc, step)
-    | RootS.Step(s) -> (conc, List.map (fun s -> compileCommand s) s :: step)
+    | RootS.Step(s) -> (conc, List.collect (fun s -> compileCommand s) s :: step)
 
 let compileCrnS (ast: TypedAST) =
     ast |> fst |> List.map (fun r -> compileRootS ([], []) r)
