@@ -27,17 +27,24 @@ let compileModule (mods: ModuleS) =
     | ModuleS.Sqrt(a, b) -> [ createReaction [ a ] [ a; b ]; createReactionWRate 0.5 [ b; b ] [] ]
     | ModuleS.Cmp(a, b) -> failwith "not implemented"
 
-let compileCommand (com: CommandS) =
+let rec compileCommand (com: CommandS) =
     match com with
-    | CommandS.Module(x) -> compileModule x
-    | CommandS.Reaction(x) -> [ x ]
-    | CommandS.Condition(x) -> failwith "Not implemented"
+    | CommandS.Module(m) -> compileModule m
+    | CommandS.Reaction(r) -> [ r ]
+    | CommandS.Condition(c) -> compileCondition c
 
-let compileCommandList (coms: CommandS list) = List.map compileCommand coms
+and compileCondition (cond: ConditionS) =
+    match cond with
+    | ConditionS.Gt commands
+    | ConditionS.Ge commands
+    | ConditionS.Eq commands
+    | ConditionS.Lt commands
+    | ConditionS.Le commands -> List.collect compileCommand commands
 
-let compileRoot (root: RootS) xs =
+let compileRootS (conc, step) (root: RootS) =
     match root with
-    | RootS.Step(x) -> compileCommandList x
-    | RootS.Conc(x) -> failwith "not implemented"
+    | RootS.Conc(c) -> (c :: conc, step)
+    | RootS.Step(s) -> (conc, List.map (fun s -> compileCommand s) s :: step)
 
-let rec compileAst (ast: TypedAST) = ast |> fst |> List.map compileRoot
+let compileCrnS (ast: TypedAST) =
+    ast |> fst |> List.map (fun r -> compileRootS ([], []) r)
