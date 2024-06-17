@@ -1,7 +1,17 @@
 module CRN.AST
 
+type TypingEnv =
+    {
+        // All species have to be defined before use and appear on the left side
+        Species: Set<string>
+        // Consts can only appear in limited circumstances and species cannot share names with consts
+        Consts: Set<string>
+    }
+
 [<RequireQualifiedAccess>]
 type SpeciesS = string
+
+type ExprSpecies = Species of SpeciesS | Null
 
 [<RequireQualifiedAccess>]
 type PNumberS = float
@@ -15,7 +25,7 @@ type ValueS =
 type ConcS = SpeciesS * ValueS
 
 [<RequireQualifiedAccess>]
-type ExprS = list<SpeciesS>
+type ExprS = list<ExprSpecies>
 
 [<RequireQualifiedAccess>]
 type ReactionS = ExprS * ExprS * PNumberS
@@ -52,4 +62,4 @@ type RootS =
 type CrnS = list<RootS>
 
 type UntypedAST = CrnS
-type TypedAST = CrnS
+type TypedAST = CrnS * TypingEnv

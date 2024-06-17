@@ -21,10 +21,16 @@ let private identifier =
 let private pspecies = identifier |>> SpeciesS
 let private pconst = identifier
 
-//let private pnumber = float_ws |>> PNumberS
-let private pnumber = float_ws
+let private pnumber: Parser<PNumberS, _> = float_ws
 
-let private pexpr = sepBy pspecies (str_ws "+") .>> ws // |>> AST.ExprS
+let SpeciesOrNull input =
+    match input with
+    "Null" -> ExprSpecies.Null
+    | str -> ExprSpecies.Species str
+
+let pspeciesnullable = identifier |>> SpeciesOrNull
+
+let private pexpr: Parser<_, _> = sepBy pspeciesnullable (str_ws "+")
 
 let private start_bracket bcopen start = str_ws start .>> str_ws bcopen
 
@@ -129,7 +135,7 @@ module RXN =
     let private pcrnrxn = ws >>. curlyparser proot .>> eof
 
     let tryParse str: Option<UntypedAST> =
-        let result = run pcrn str
+        let result = run pcrnrxn str
 
         match result with
         | Success(output, _, _) -> Some(output)
