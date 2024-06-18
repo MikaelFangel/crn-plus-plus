@@ -11,8 +11,10 @@ type private TypingEnv' =
         Species: Set<string>
         // Consts can only appear in limited circumstances and species cannot share names with consts
         Consts: Set<string>
-        // Mutated
+        // Dangling
         Dangling: Set<string>
+        // Mutated
+        Mutated: Set<string>
     }
 
 // Add a species reference to the environment
@@ -33,6 +35,12 @@ let private checkdangling env =
     else
         let dangling = Set.difference env.Dangling env.Species
         Error [sprintf "Dangling references %O" dangling]
+
+let private checkmutation name env =
+    if env.Mutated.Contains name then
+        Error [sprintf "Species %s mutated multiple times in step." name]
+    else
+        Ok {env with Mutated = env.Mutated.Add name}
 
 // left hand side values must be defined
 let rec private exprtyperleft env expr =
@@ -73,6 +81,7 @@ let private moduletyper env module' =
             Error [sprintf "Same value %s in both sides of expression" sp1]
         else
             addreference target env |> Ok
+            |> Result.bind (checkmutation target)
     | ModuleS.Add(sp1, sp2, target)
     | ModuleS.Sub(sp1, sp2, target)
     | ModuleS.Mul(sp1, sp2, target)
@@ -86,6 +95,7 @@ let private moduletyper env module' =
             Error [sprintf "Same value %s in all sides of expression" sp1]      
         else
             addreference target env |> Ok
+            |> Result.bind (checkmutation target)
 
 let rec private commandtyper env command =
     match command with
@@ -105,24 +115,20 @@ and private conditiontyper env condition =
     | ConditionS.Ge(lst)
     | ConditionS.Eq(lst)
     | ConditionS.Lt(lst)
-    | ConditionS.Le(lst) -> conditiontyper' env lst
+    | ConditionS.Le(lst) ->
+        let mutables = env.Mutated
+        conditiontyper' env lst
+        |> Result.bind (fun env -> Ok {env with Mutated = mutables})
 
 and private reactiontyper env reaction =
     match reaction with
     (_, _, speed) when speed <= 0.0 -> 
         Error [sprintf "Reaction speed %f cannot be 0 or below" speed]
     | ([], _, _) -> Error [sprintf "Left side of reaction is empty"]
-    //| (_, [], _) -> Error (sprintf "Right side of reaction is empty")
     | ([ExprSpecies.Null], _, _) -> Error [sprintf "Attempt at immaculate conception of "]
     | (expr1, expr2, _) -> 
         exprtyperleft env expr1 
         |> Result.bind (fun env -> exprtyperright env expr2)
-
-// Number must be positive
-let private numbertyper env number =
-    match number with
-    | number when number < 0.0 -> Error ["Concentration must be positive"]
-    | _ -> Ok(env)
 
 let rec private steptyper (env, steps) =
     // TODO: within the same state, each variable can only be modified once
@@ -145,8 +151,10 @@ let private conctyper env conc =
             Error [sprintf "Using species %s as a const value" constName]
         else
             Ok {env with Species = env.Species.Add concName; Consts = env.Consts.Add constName }
-    | (concName, _) ->
-        if env.Species.Contains concName then
+    | (concName, ValueS.Number(number)) ->
+        if number < 0.0 then
+            Error [sprintf "Number %f is not positive" number]
+        else if env.Species.Contains concName then
             Error [sprintf "Duplicate definition of %s" concName]
         else if env.Consts.Contains concName then
             Error [sprintf "Constant value %s cannot be used as species" concName]
@@ -154,6 +162,7 @@ let private conctyper env conc =
             Ok {env with Species = env.Species.Add concName; Consts = env.Consts }    
 
 let rec private roottyper (env, rootlist): Result<TypingEnv', TypeError list>  =
+    let env = {env with Mutated = Set []}
     match rootlist with
     | [] -> Ok(env)
     | head :: tail -> 
@@ -162,7 +171,7 @@ let rec private roottyper (env, rootlist): Result<TypingEnv', TypeError list>  =
                 let result = conctyper env conc
                 result |> Result.bind (fun state -> roottyper (state, tail))
             | RootS.Step(step) ->
-                let result = steptyper (env, step) 
+                let result = steptyper (env, step)
                 result |> Result.bind (fun state -> roottyper (state, tail))
 
 let rec private crntyper env crn : Result<TypingEnv', TypeError list> =
@@ -172,7 +181,10 @@ let rec private crntyper env crn : Result<TypingEnv', TypeError list> =
     | Error err -> Error err 
 
 let typecheck untypedast: Result<TypedAST, TypeError list> =
-    let env = { Species = Set []; Consts = Set []; Dangling = Set [] }
+    let env: TypingEnv' = { Species  = Set [] 
+                            Consts   = Set [] 
+                            Dangling = Set []
+                            Mutated  = Set [] }
     match crntyper env untypedast with
     | Ok(env) -> Ok(untypedast, {Species = env.Species; Consts = env.Consts })
     | Error e -> 
