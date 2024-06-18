@@ -75,11 +75,11 @@ let private exprtyperright env expr =
 /// Reaction speed must be above zero, left hand side must not be empty
 let private reactiontyper env reaction =
     match reaction with
-    (_, _, speed) when speed <= 0.0 -> 
+    ReactionS.Reaction(_, _, speed) when speed <= 0.0 -> 
         Error [sprintf "Reaction speed %f cannot be 0 or below" speed]
-    | ([], _, _)
-    | ([ExprSpecies.Null], _, _) -> Error [sprintf "Attempt at immaculate conception of a species"]
-    | (expr1, expr2, _) -> 
+    | ReactionS.Reaction(ExprS.Expr [], _, _)
+    | ReactionS.Reaction(ExprS.Expr [ExprSpecies.Null], _, _) -> Error [sprintf "Attempt at immaculate conception of a species"]
+    | ReactionS.Reaction(ExprS.Expr expr1, ExprS.Expr expr2, _) -> 
         exprtyperleft env expr1 
         |> Result.bind (fun env -> exprtyperright env expr2)
 
@@ -123,6 +123,8 @@ and private conditiontyper env condition =
     // in the same step since that is not checked. It might make sense to just reject
     // all of those programs rather than try to hack my way around this in a more clever
     // way.
+
+    // TODO: restrict conditions within each 
     let rec conditiontyper' env lst =
         match lst with
         [] -> Ok(env)
@@ -155,7 +157,7 @@ let rec private steptyper (env, steps) =
 /// has to be evaluated before we run the program
 let private conctyper env conc =
     match conc with
-    (concName, ValueS.Literal(constName)) -> 
+    ConcS.Conc(concName, ValueS.Literal(constName)) -> 
         if env.Species.Contains concName then
             Error [sprintf "Duplicate definition of %s" concName]
         else if env.Consts.Contains concName then
@@ -164,7 +166,7 @@ let private conctyper env conc =
             Error [sprintf "Using species %s as a const value" constName]
         else
             Ok {env with Species = env.Species.Add concName; Consts = env.Consts.Add constName }
-    | (concName, ValueS.Number(number)) ->
+    | ConcS.Conc(concName, ValueS.Number(number)) ->
         if number < 0.0 then
             Error [sprintf "Number %f is not positive" number]
         else if env.Species.Contains concName then
@@ -188,7 +190,9 @@ let rec private roottyper (env, rootlist): Result<TypingEnv', TypeError list>  =
                 result |> Result.bind (fun state -> roottyper (state, tail))
 
 let rec private crntyper env crn : Result<TypingEnv', TypeError list> =
-    let result = roottyper (env, crn)
+    match crn with
+    CrnS.Crn(rootlist) ->
+    let result = roottyper (env, rootlist)
     match result with
     Ok env' -> checkdangling env'
     | Error err -> Error err 
@@ -196,9 +200,9 @@ let rec private crntyper env crn : Result<TypingEnv', TypeError list> =
 /// Typecheck the CRN to ensure that it is valid. Since everything in a CRN is global
 /// This returns the same AST combined with a typing environment that has a list of all
 /// species and constant values that must be evaluated before running the CRN.
-let typecheck untypedast: Result<TypedAST, TypeError list> =
-    let env: TypingEnv' = { Species  = Set [] 
-                            Consts   = Set [] 
+let typecheck (untypedast: UntypedAST): Result<TypedAST, TypeError list> =
+    let env: TypingEnv' = { Species  = Set []
+                            Consts   = Set []
                             Dangling = Set []
                             Mutated  = Set [] }
     match crntyper env untypedast with

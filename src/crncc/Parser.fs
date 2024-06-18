@@ -30,7 +30,7 @@ let private SpeciesOrNull input =
 
 let private pspeciesnullable = identifier |>> SpeciesOrNull
 
-let private pexpr = sepBy pspeciesnullable (str_ws "+")
+let private pexpr = sepBy pspeciesnullable (str_ws "+") |>> ExprS.Expr
 
 let private start_bracket bcopen start = str_ws start .>> str_ws bcopen
 
@@ -47,7 +47,7 @@ let private brackets3 popen pclose t1 t2 t3 cons =
 let pvalue = choice [ pconst |>> ValueS.Literal; pnumber |>> ValueS.Number ]
 
 let private pconc =
-    brackets2 (start_bracket "[" "conc") (end_bracket "]") pspecies pvalue ConcS
+    brackets2 (start_bracket "[" "conc") (end_bracket "]") pspecies pvalue ConcS.Conc
 
 let private brackets3species name =
     brackets3 (start_bracket "[" name) (end_bracket "]") pspecies pspecies pspecies
@@ -74,7 +74,7 @@ let private pmodule =
           pmodulecmp ]
 
 let private prxn =
-    brackets3 (start_bracket "[" "rxn") (end_bracket "]") pexpr pexpr pnumber ReactionS
+    brackets3 (start_bracket "[" "rxn") (end_bracket "]") pexpr pexpr pnumber ReactionS.Reaction
 
 let private listparser popen pclose listelem =
     between popen pclose (sepBy listelem (str_ws ","))
@@ -111,7 +111,7 @@ let private crnopen = str_ws "crn" >>. str_ws "=" .>> str_ws "{"
 
 let private crnclose = str_ws "}"
 let private curlyparser = listparser crnopen crnclose
-let private pcrn = ws >>. curlyparser proot .>> eof
+let private pcrn = ws >>. curlyparser proot .>> eof |>> CrnS.Crn
 
 /// Try and parse text into an untyped AST
 let tryParse (str) : Result<UntypedAST, _> =
@@ -129,7 +129,7 @@ module RXN =
 
     let private proot = choice [ pstep |>> RootS.Step; pconc |>> RootS.Conc ]
 
-    let private pcrnrxn = ws >>. curlyparser proot .>> eof
+    let private pcrnrxn = ws >>. curlyparser proot .>> eof |>> CrnS.Crn
     /// Try and parse the text into an untyped AST but restrict to only
     /// reactions and concentration statements.
     let tryParse str : Result<UntypedAST, string> =
