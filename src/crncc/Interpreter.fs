@@ -51,19 +51,32 @@ and private stepCondition (oldstate:State) newstate cmp x =
 let private initial program constmap = 
     let (crn, env) = program
     let concmap = Set.fold (fun map s -> Map.add s 0.0 map) Map.empty env.Species
-    List.fold (fun s0 x -> match x with
-                           | RootS.Conc (x, ValueS.Number y) -> Map.add x y s0
-                           | RootS.Conc (x, ValueS.Literal y) -> Map.add x (Map.find y constmap) concmap
-                           | _ -> s0) concmap crn
+    List.fold (fun s x ->   let (concs, steps) = s
+                            match x with
+                            | RootS.Conc (x, ValueS.Number y) -> (Map.add x y concs, steps)
+                            | RootS.Conc (x, ValueS.Literal y) -> (Map.add x (Map.find y constmap) concs, steps)
+                            | RootS.Step x -> (concs, x::steps)) (concmap, []) crn
+let generate s0 steps =
+    (s0,(0.0,0.0), 0)
+    |> Seq.unfold (fun state ->
+        let (state, cmp, count) = state
+        if count = 0 then  // overflow
+            None
+        else
+            let len = List.length steps
+            let (state', cmp') = step state state cmp steps[count%len]
+            Some (state,(state', cmp', count+1) ))
+
 let interpreter constmap program =
 
-    let s0 = initial program constmap
-    let (crn, env) = program
+    let (s0, steps) = initial program constmap
     let rec gen state cmp crn =
         match crn with
         | RootS.Step x::xs -> let (news, newcmp) = step state state cmp x
                               state::gen news newcmp xs              
         | _::xs -> gen state cmp xs
         | [] ->  []
-    Seq.ofList (gen s0 (0.0,0.0) crn)
     
+    generate s0 steps 
+    
+
