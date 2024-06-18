@@ -49,7 +49,7 @@ and private stepCondition (oldstate:State) newstate cmp x =
     | (ConditionS.Le cmd,(x,y)) ->  if x<=y then step oldstate newstate cmp cmd
                                     else (newstate, cmp)
 let private initial program constmap = 
-    let (crn, env) = program
+    let (CrnS.Crn crn, env) = program
     let concmap = Set.fold (fun map s -> Map.add s 0.0 map) Map.empty env.Species
     List.fold (fun s x ->   let (concs, steps) = s
                             match x with
@@ -67,7 +67,7 @@ let generate s0 steps =
             let (state', cmp') = step state state cmp steps[count%len]
             Some (state,(state', cmp', count+1) ))
 
-let interpreter constmap program =
+let interpreter constmap (program:TypedAST) =
 
     let (s0, steps) = initial program constmap
     let rec gen state cmp crn =
