@@ -5,12 +5,12 @@ open CRN.AST
 let createReactionWRate (rate: float) (lhs: SpeciesS list) (rhs: SpeciesS list) =
     match rhs with
     | [] ->
-        ReactionS(
-            lhs |> List.map (fun e -> ExprSpecies.Species e),
-            rhs |> List.map (fun e -> ExprSpecies.Species e),
+        ReactionS.Reaction(
+            lhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr,
+            rhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr,
             rate
         )
-    | _ -> ReactionS(lhs |> List.map (fun e -> ExprSpecies.Species e), [ ExprSpecies.Null ], rate)
+    | _ -> ReactionS.Reaction(lhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr, [ ExprSpecies.Null ] |> ExprS.Expr, rate)
 
 let createReaction = createReactionWRate 1.0
 
@@ -53,4 +53,5 @@ let compileRootS (conc, step) (root: RootS) =
     | RootS.Step(s) -> (conc, List.collect (fun s -> compileCommand s) s :: step)
 
 let compileCrnS (ast: TypedAST) =
-    ast |> fst |> List.map (fun r -> compileRootS ([], []) r)
+    match ast |> fst with
+    CrnS.Crn(rootlist) -> rootlist |> List.map (fun r -> compileRootS ([], []) r)
