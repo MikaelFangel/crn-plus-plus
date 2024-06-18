@@ -65,8 +65,29 @@ let ``Typechecker: factorial`` () =
     Assert.True(Result.isOk result, result.ToString())
 
 [<Fact>]
-let ``Typechecker: illegal`` () =
-    let result = testParser "illegal.crn"
+let ``Typechecker: Ill Formed multiple mutation`` () =
+    let result = testParserIllFormed "multiple_mutation.crn"
+    let result = result |> Result.bind typecheck 
+
+    Assert.True(Result.isError result, result.ToString())
+
+[<Fact>]
+let ``Typechecker: Ill Formed repeat conditions`` () =
+    let result = testParserIllFormed "repeat_conditions.crn"
+    let result = result |> Result.bind typecheck 
+
+    Assert.True(Result.isError result, result.ToString())
+
+[<Fact>]
+let ``Typechecker: Ill Formed repeat conditions 2`` () =
+    let result = testParserIllFormed "repeat_conditions2.crn"
+    let result = result |> Result.bind typecheck 
+
+    Assert.True(Result.isError result, result.ToString())
+
+[<Fact>]
+let ``Typechecker: Ill Formed dangling condition`` () =
+    let result = testParserIllFormed "dangling_condition.crn"
     let result = result |> Result.bind typecheck 
 
     Assert.True(Result.isError result, result.ToString())
