@@ -53,8 +53,8 @@ let private initial program constmap =
     let concmap = Set.fold (fun map s -> Map.add s 0.0 map) Map.empty env.Species
     List.fold (fun s x ->   let (concs, steps) = s
                             match x with
-                            | RootS.Conc (x, ValueS.Number y) -> (Map.add x y concs, steps)
-                            | RootS.Conc (x, ValueS.Literal y) -> (Map.add x (Map.find y constmap) concs, steps)
+                            | RootS.Conc ( ConcS.Conc ( x, ValueS.Number y)) -> (Map.add x y concs, steps)
+                            | RootS.Conc ( ConcS.Conc ( x, ValueS.Literal y)) -> (Map.add x (Map.find y constmap) concs, steps)
                             | RootS.Step x -> (concs, x::steps)) (concmap, []) crn
 let generate s0 steps =
     (s0,(0.0,0.0), 0)
