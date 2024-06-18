@@ -2,7 +2,7 @@ module CRN.Interpreter
 open CRN.AST
 type State = Map<string, float>
 
-let stepModule (oldstate:State) newstate cmp =
+let private stepModule (oldstate:State) newstate cmp =
     function
     | ModuleS.Ld (x,y) -> let xconc = Map.find x oldstate
                           (Map.add y xconc newstate, cmp)
@@ -27,7 +27,7 @@ let stepModule (oldstate:State) newstate cmp =
                             (newstate, (xconc,yconc))
 
 
-let rec step oldstate newstate cmp =
+let rec private step oldstate newstate cmp =
     function
     | [] -> (newstate, cmp)
     | Reaction x::tail ->   let Reaction (reactant, products, speed) = x
@@ -36,7 +36,7 @@ let rec step oldstate newstate cmp =
                         step oldstate state newcmp tail
     | Condition x::tail -> let (state, newcmp) = stepCondition oldstate newstate cmp x
                            step oldstate state newcmp tail
-and stepCondition (oldstate:State) newstate cmp x =
+and private stepCondition (oldstate:State) newstate cmp x =
     match (x,cmp) with 
     | (ConditionS.Gt cmd,(x,y)) ->  if x>y then step oldstate newstate cmp cmd
                                     else (newstate, cmp)
@@ -48,14 +48,14 @@ and stepCondition (oldstate:State) newstate cmp x =
                                     else (newstate, cmp)
     | (ConditionS.Le cmd,(x,y)) ->  if x<=y then step oldstate newstate cmp cmd
                                     else (newstate, cmp)
-let initial program constmap = 
+let private initial program constmap = 
     let (crn, env) = program
     let concmap = Set.fold (fun map s -> Map.add s 0.0 map) Map.empty env.Species
     List.fold (fun s0 x -> match x with
                            | RootS.Conc (x, ValueS.Number y) -> Map.add x y s0
                            | RootS.Conc (x, ValueS.Literal y) -> Map.add x (Map.find y constmap) concmap
                            | _ -> s0) concmap crn
-let interpreter program constmap=
+let interpreter constmap program =
 
     let s0 = initial program constmap
     let (crn, env) = program
@@ -63,6 +63,7 @@ let interpreter program constmap=
         match crn with
         | RootS.Step x::xs -> let (news, newcmp) = step state state cmp x
                               state::gen news newcmp xs              
+        | _::xs -> gen state cmp xs
         | [] ->  []
     Seq.ofList (gen s0 (0.0,0.0) crn)
     
