@@ -5,6 +5,8 @@ open AST
 /// Type errors are a series of strings
 type TypeError = string
 
+type private Condition = G | E | L
+
 /// This is the same as the TypingEnv type but also keeps track of dangling references
 type private TypingEnv' =
     {
@@ -16,6 +18,8 @@ type private TypingEnv' =
         Dangling: Set<string>
         /// Values can only be mutated at one part inside a step
         Mutated: Set<string>
+        ///
+        Conditions: Set<Condition>
     }
 
 /// Add a species reference to the environment
@@ -111,46 +115,54 @@ let private moduletyper env module' =
             addreference target env |> Ok
             |> Result.bind (checkmutation target)
 
-let rec private commandtyper env command =
-    match command with
-        | Reaction(reaction) -> reactiontyper env reaction
-        | Module(module') -> moduletyper env module'
-        | Condition(cond) -> conditiontyper env cond
-
 /// conditions can mutate mutually exclusive things
-and private conditiontyper env condition =
-    // TODO: we still have a problem if we mutate something outside of a condition
-    // in the same step since that is not checked. It might make sense to just reject
-    // all of those programs rather than try to hack my way around this in a more clever
-    // way.
-
-    // TODO: restrict conditions within each 
-    let rec conditiontyper' env lst =
-        match lst with
-        [] -> Ok(env)
-        | head :: tail -> 
-            let env' = commandtyper env head
-            env' |> Result.bind (fun env -> conditiontyper' env tail)
-    match condition with
-    | ConditionS.Gt(lst)
-    | ConditionS.Ge(lst)
-    | ConditionS.Eq(lst)
-    | ConditionS.Lt(lst)
-    | ConditionS.Le(lst) ->
-        let mutables = env.Mutated
-        conditiontyper' env lst
-        |> Result.bind (fun env -> Ok {env with Mutated = mutables})
-
+/// Conditions within a step have to be mutually exclusive themselves
+let rec private conditiontyper env condition =
+    let covered = 
+        match condition with
+        | ConditionS.Gt(_) -> Set.singleton G
+        | ConditionS.Ge(_) -> Set.ofList [G; E]
+        | ConditionS.Eq(_) -> Set.singleton E
+        | ConditionS.Lt(_) -> Set.singleton L
+        | ConditionS.Le(_) -> Set.ofList [L; E]
+    let intersection = Set.intersect covered env.Conditions
+    let res1 = 
+        if intersection.IsEmpty then
+            let env' = {env with Conditions = Set.union covered env.Conditions}
+            Ok env'
+        else
+            Error ["Intersecting conditions in condition expression"]
+    let conditiontyper' env condition =    
+        match condition with
+        | ConditionS.Gt(lst)
+        | ConditionS.Ge(lst)
+        | ConditionS.Eq(lst)
+        | ConditionS.Lt(lst)
+        | ConditionS.Le(lst) ->
+            let mutables = env.Mutated
+            steptyper env lst
+            |> Result.bind (fun env -> Ok {env with Mutated = mutables})
+    res1 |> Result.bind (fun env -> conditiontyper' env condition)
 
 /// Within each step, species can be mutated only once
-let rec private steptyper (env, steps) =
-    let rec steptyper' env steps = 
-        match steps with 
-        [] -> Ok(env)
-        | head :: tail -> 
-            commandtyper env head
-            |> Result.bind (fun env -> steptyper' env tail)
-    steptyper' env steps
+/// And if there are conditions, there can only be conditions
+and private steptyper env steps =
+    let rec steptyper' env steps =
+        match steps with
+        | [] -> Ok(env)
+        | Reaction(reaction) :: tail -> reactiontyper env reaction |> Result.bind (fun env -> steptyper' env tail)
+        | Module(m') :: tail -> moduletyper env m' |> Result.bind (fun env -> steptyper' env tail)
+        | _ -> Error ["Conditions cannot exist at the same level as modules and reactions"]
+    let rec steptyper'' env steps =
+        match steps with
+        | [] -> Ok({env with Conditions = Set.empty})
+        | Condition(cond) :: tail -> conditiontyper env cond |> Result.bind (fun env -> steptyper'' env tail)
+        | _ -> Error ["Conditions cannot exist at the same level as modules and reactions"]
+    match steps with
+    | [] -> Ok(env)
+    | Reaction(_) :: _
+    | Module(_) :: _ -> steptyper' env steps
+    | Condition(_) :: _ -> steptyper'' env steps
 
 /// Concentrations must not include multiple definitions
 /// Right hand side value must be a number or a "constant" that
@@ -174,9 +186,9 @@ let private conctyper env conc =
         else if env.Consts.Contains concName then
             Error [sprintf "Constant value %s cannot be used as species" concName]
         else
-            Ok {env with Species = env.Species.Add concName; Consts = env.Consts }    
+            Ok {env with Species = env.Species.Add concName }    
 
-let rec private roottyper (env, rootlist): Result<TypingEnv', TypeError list>  =
+let rec private roottyper env rootlist: Result<TypingEnv', TypeError list>  =
     let env = {env with Mutated = Set []}
     match rootlist with
     | [] -> Ok(env)
@@ -184,15 +196,15 @@ let rec private roottyper (env, rootlist): Result<TypingEnv', TypeError list>  =
             match head with
             RootS.Conc(conc) -> 
                 let result = conctyper env conc
-                result |> Result.bind (fun state -> roottyper (state, tail))
+                result |> Result.bind (fun state -> roottyper state tail)
             | RootS.Step(step) ->
-                let result = steptyper (env, step)
-                result |> Result.bind (fun state -> roottyper (state, tail))
+                let result = steptyper env step
+                result |> Result.bind (fun state -> roottyper state tail)
 
 let rec private crntyper env crn : Result<TypingEnv', TypeError list> =
     match crn with
     CrnS.Crn(rootlist) ->
-    let result = roottyper (env, rootlist)
+    let result = roottyper env rootlist
     match result with
     Ok env' -> checkdangling env'
     | Error err -> Error err 
@@ -201,10 +213,11 @@ let rec private crntyper env crn : Result<TypingEnv', TypeError list> =
 /// This returns the same AST combined with a typing environment that has a list of all
 /// species and constant values that must be evaluated before running the CRN.
 let typecheck (untypedast: UntypedAST): Result<TypedAST, TypeError list> =
-    let env: TypingEnv' = { Species  = Set []
-                            Consts   = Set []
-                            Dangling = Set []
-                            Mutated  = Set [] }
+    let env: TypingEnv' = { Species  = Set.empty
+                            Consts   = Set.empty
+                            Dangling = Set.empty
+                            Mutated  = Set.empty
+                            Conditions = Set.empty }
     match crntyper env untypedast with
     | Ok(env) -> Ok(untypedast, {Species = env.Species; Consts = env.Consts })
     | Error e -> 
