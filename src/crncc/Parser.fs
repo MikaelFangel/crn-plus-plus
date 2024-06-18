@@ -21,16 +21,16 @@ let private identifier =
 let private pspecies = identifier |>> SpeciesS
 let private pconst = identifier
 
-let private pnumber: Parser<PNumberS, _> = float_ws
+let private pnumber = float_ws
 
-let SpeciesOrNull input =
+let private SpeciesOrNull input =
     match input with
-    "Null" -> ExprSpecies.Null
+    | "Null" -> ExprSpecies.Null
     | str -> ExprSpecies.Species str
 
-let pspeciesnullable = identifier |>> SpeciesOrNull
+let private pspeciesnullable = identifier |>> SpeciesOrNull
 
-let private pexpr: Parser<_, _> = sepBy pspeciesnullable (str_ws "+")
+let private pexpr = sepBy pspeciesnullable (str_ws "+")
 
 let private start_bracket bcopen start = str_ws start .>> str_ws bcopen
 
@@ -44,10 +44,10 @@ let private brackets2 popen pclose t1 t2 cons =
 let private brackets3 popen pclose t1 t2 t3 cons =
     pipe3 (popen >>. t1) (comma >>. t2) (comma >>. t3 .>> pclose) (fun v1 v2 v3 -> cons (v1, v2, v3))
 
-let pvalue = choice [pconst |>> ValueS.Literal; pnumber |>> ValueS.Number]
+let pvalue = choice [ pconst |>> ValueS.Literal; pnumber |>> ValueS.Number ]
 
 let private pconc =
-    brackets2 (start_bracket "[" "conc") (end_bracket "]") pspecies pvalue  ConcS
+    brackets2 (start_bracket "[" "conc") (end_bracket "]") pspecies pvalue ConcS
 
 let private brackets3species name =
     brackets3 (start_bracket "[" name) (end_bracket "]") pspecies pspecies pspecies
@@ -113,12 +113,11 @@ let private crnclose = str_ws "}"
 let private curlyparser = listparser crnopen crnclose
 let private pcrn = ws >>. curlyparser proot .>> eof
 
-let tryParse (str): Result<UntypedAST, _> =
-    let result = run pcrn str
-    
-    match result with
+/// Try and parse text into an untyped AST
+let tryParse (str) : Result<UntypedAST, _> =
+    match run pcrn str with
     | Success(output, _, _) -> Result.Ok output
-    | Failure(errorMsg, _, _) -> Result.Error [errorMsg]
+    | Failure(errorMsg, _, _) -> Result.Error [ errorMsg ]
 
 module RXN =
     let private rxncommand = prxn |>> CommandS.Reaction
@@ -131,11 +130,9 @@ module RXN =
     let private proot = choice [ pstep |>> RootS.Step; pconc |>> RootS.Conc ]
 
     let private pcrnrxn = ws >>. curlyparser proot .>> eof
-
-    let tryParse str: Result<UntypedAST, string> =
-        let result = run pcrnrxn str
-
-        match result with
+    /// Try and parse the text into an untyped AST but restrict to only
+    /// reactions and concentration statements.
+    let tryParse str : Result<UntypedAST, string> =
+        match run pcrnrxn str with
         | Success(output, _, _) -> Result.Ok output
         | Failure(errorMsg, _, _) -> Result.Error errorMsg
-    
