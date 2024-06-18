@@ -48,17 +48,21 @@ and stepCondition (oldstate:State) newstate cmp x =
                                     else (newstate, cmp)
     | (ConditionS.Le cmd,(x,y)) ->  if x<=y then step oldstate newstate cmp cmd
                                     else (newstate, cmp)
-let initial program env = 
+let initial program constmap = 
+    let (crn, env) = program
+    let concmap = Set.fold (fun map s -> Map.add s 0.0 map) Map.empty env.Species
     List.fold (fun s0 x -> match x with
                            | RootS.Conc (x, ValueS.Number y) -> Map.add x y s0
-                           | RootS.Conc (x, ValueS.Literal y) -> failwith "variables not handled for conc"
-                           | _ -> s0) Map.empty program
-let interpreter program =
-    let s0 = initial program
-    let rec seq state cmp program =
-        match program with
+                           | RootS.Conc (x, ValueS.Literal y) -> Map.add x (Map.find y constmap) concmap
+                           | _ -> s0) concmap crn
+let interpreter program constmap=
+
+    let s0 = initial program constmap
+    let (crn, env) = program
+    let rec gen state cmp crn =
+        match crn with
         | RootS.Step x::xs -> let (news, newcmp) = step state state cmp x
-                              yield news
-                              yield! seq news newcmp xs 
-    seq s0 (ValueS "","") program
+                              state::gen news newcmp xs              
+        | [] ->  []
+    Seq.ofList (gen s0 (0.0,0.0) crn)
     
