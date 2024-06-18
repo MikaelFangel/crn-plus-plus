@@ -3,6 +3,7 @@ module CRNTest.Parser
 open Xunit
 
 open CRNTest.Common
+open CRN
 
 [<Fact>]
 let ``Parser: counter`` () =
@@ -49,3 +50,14 @@ let ``Parser: subalt`` () =
 let ``Parser: factorial`` () =
     let result = testParser "factorial.crn"
     Assert.True(Result.isOk result, result.ToString())
+
+[<Fact>]
+let ``Parser: Self test`` () =
+    let result = testParser "factorial.crn"
+    match result with
+        | Ok (ast) -> 
+            let ast2maybe = ast.ToString() |> Parser.tryParse
+            match ast2maybe with
+            Ok ast2 -> Assert.True ((ast = ast2))
+            | Error _ -> Assert.Fail ""
+        | Error (_) -> Assert.Fail ""
