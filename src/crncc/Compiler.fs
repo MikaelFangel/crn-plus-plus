@@ -29,7 +29,9 @@ let compileModule (mods: ModuleS) =
     | ModuleS.Mul(a, b, c) -> [ createReaction [ a; b ] [ a; b; c ]; createReaction [ c ] [] ]
     | ModuleS.Div(a, b, c) -> [ createReaction [ a ] [ a; c ]; createReaction [ b; c ] [ b ] ]
     | ModuleS.Sqrt(a, b) -> [ createReaction [ a ] [ a; b ]; createReactionWRate 0.5 [ b; b ] [] ]
-    | ModuleS.Cmp(_, _) -> []
+    | ModuleS.Cmp(x, y) ->
+        [ createReaction [ SpeciesS "XgtY"; x ] [ SpeciesS "XltY"; y ]
+          createReaction [ SpeciesS "XltY"; x ] [ SpeciesS "XgtY"; x ] ]
 
 let rec compileCommand (com: CommandS) =
     match com with
