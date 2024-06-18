@@ -10,6 +10,7 @@
     <Compile Include="Parser.fs" />
     <Compile Include="Typechecker.fs" />
     <Compile Include="Compiler.fs" />
+    <Compile Include="Simulator.fs"/>
   </ItemGroup>
 
   <ItemGroup>
