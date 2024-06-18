@@ -12,6 +12,10 @@ type TypingEnv =
 type SpeciesS = string
 
 type ExprSpecies = Species of SpeciesS | Null
+    with override this.ToString() =
+            match this with 
+                Species(s) -> s.ToString()
+                | Null -> "Null"
 
 [<RequireQualifiedAccess>]
 type PNumberS = float
@@ -20,15 +24,28 @@ type PNumberS = float
 type ValueS =
     | Literal of string
     | Number of PNumberS
+    with override this.ToString() =
+            match this with
+            Literal(st) -> st
+            | Number(num) -> num.ToString()
 
 [<RequireQualifiedAccess>]
-type ConcS = SpeciesS * ValueS
+type ConcS = Conc of SpeciesS * ValueS
+    with override this.ToString() =
+                match this with
+                    Conc(species, value) -> $"conc[{species}, {value}]"
 
 [<RequireQualifiedAccess>]
-type ExprS = list<ExprSpecies>
+type ExprS = Expr of list<ExprSpecies>
+    with override this.ToString() =
+            match this with
+                Expr(lst) -> List.map string lst |> String.concat "+" 
 
 [<RequireQualifiedAccess>]
-type ReactionS = ExprS * ExprS * PNumberS
+type ReactionS = Reaction of ExprS * ExprS * PNumberS
+    with override this.ToString() =
+            match this with
+                Reaction(expr1, expr2, num) -> $"rxn[{expr1}, {expr2}, {num}]"
 
 [<RequireQualifiedAccess>]
 type ModuleS =
@@ -39,6 +56,21 @@ type ModuleS =
     | Div of SpeciesS * SpeciesS * SpeciesS
     | Sqrt of SpeciesS * SpeciesS
     | Cmp of SpeciesS * SpeciesS
+    with override this.ToString() =
+            match this with
+                | Ld(sp1, sp2) -> $"ld[{sp1}, {sp2}]"
+                | Sqrt(sp1, sp2) -> $"sqrt[{sp1}, {sp2}]"
+                | Cmp(sp1, sp2) -> $"cmp[{sp1}, {sp2}]"
+                | Add(sp1, sp2, sp3) -> $"add[{sp1}, {sp2}, {sp3}]"
+                | Sub(sp1, sp2, sp3) -> $"sub[{sp1}, {sp2}, {sp3}]"
+                | Mul(sp1, sp2, sp3) -> $"mul[{sp1}, {sp2}, {sp3}]"
+                | Div(sp1, sp2, sp3) -> $"div[{sp1}, {sp2}, {sp3}]"
+                
+
+let conditionString beginning lst =
+    let center = List.map string lst |> String.concat ",\n"
+    $"{beginning}[{{ {center} }}]"
+
 
 [<RequireQualifiedAccess>]
 type ConditionS =
@@ -47,19 +79,40 @@ type ConditionS =
     | Eq of CommandS list
     | Lt of CommandS list
     | Le of CommandS list
+    with override this.ToString() =
+            match this with
+                | Gt(lst) -> conditionString "ifGT" lst
+                | Ge(lst) -> conditionString "ifGE" lst
+                | Eq(lst) -> conditionString "ifEQ" lst
+                | Lt(lst) -> conditionString "ifLT" lst
+                | Le(lst) -> conditionString "ifLE" lst
 
 and CommandS =
     | Reaction of ReactionS
     | Module of ModuleS
     | Condition of ConditionS
+    with override this.ToString() =
+            match this with
+                | Reaction(reaction) -> reaction.ToString()
+                | Module(m) -> m.ToString()
+                | Condition(con) -> con.ToString()
 
 [<RequireQualifiedAccess>]
 type RootS =
     | Conc of ConcS
     | Step of CommandS list
+    with override this.ToString() =
+            match this with
+                | Conc(conc) -> conc.ToString()
+                | Step(commands) -> conditionString "step" commands
 
 [<RequireQualifiedAccess>]
-type CrnS = list<RootS>
+type CrnS = Crn of list<RootS>
+    with override this.ToString() =
+            match this with
+            | Crn(lst) -> 
+                let center = String.concat "," (List.map string lst)
+                $"crn = {{ {center} }}"
 
 type UntypedAST = CrnS
 type TypedAST = CrnS * TypingEnv
