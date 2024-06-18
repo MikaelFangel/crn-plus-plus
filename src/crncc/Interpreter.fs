@@ -60,7 +60,7 @@ let generate s0 steps =
     (s0,(0.0,0.0), 0)
     |> Seq.unfold (fun state ->
         let (state, cmp, count) = state
-        if count = 0 then  // overflow
+        if count < 0 then  // overflow
             None
         else
             let len = List.length steps
