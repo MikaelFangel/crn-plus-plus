@@ -113,14 +113,12 @@ let private crnclose = str_ws "}"
 let private curlyparser = listparser crnopen crnclose
 let private pcrn = ws >>. curlyparser proot .>> eof
 
-let tryParse str =
+let tryParse (str): Result<UntypedAST, _> =
     let result = run pcrn str
     
     match result with
-    | Success(output, _, _) -> Some(output)
-    | Failure(errorMsg, _, _) ->
-        printfn "Failure: %s" errorMsg
-        None
+    | Success(output, _, _) -> Result.Ok output
+    | Failure(errorMsg, _, _) -> Result.Error [errorMsg]
 
 module RXN =
     let private rxncommand = prxn |>> CommandS.Reaction
@@ -134,12 +132,10 @@ module RXN =
 
     let private pcrnrxn = ws >>. curlyparser proot .>> eof
 
-    let tryParse str: Option<UntypedAST> =
+    let tryParse str: Result<UntypedAST, string> =
         let result = run pcrnrxn str
 
         match result with
-        | Success(output, _, _) -> Some(output)
-        | Failure(errorMsg, _, _) ->
-            printfn "Failure: %s" errorMsg
-            None
+        | Success(output, _, _) -> Result.Ok output
+        | Failure(errorMsg, _, _) -> Result.Error errorMsg
     
