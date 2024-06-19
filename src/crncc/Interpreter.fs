@@ -75,7 +75,6 @@ let generate s0 steps =
 let interpreter constmap (program:TypedAST) =
     try
         let (s0, steps) = initial program constmap
-        printfn "Steps %A" steps
         let res = generate s0 steps 
         Result.Ok res
     with
