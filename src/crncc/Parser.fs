@@ -25,7 +25,6 @@ let private pnumber = float_ws
 
 let private SpeciesOrNull input =
     match input with
-    | "Null" -> ExprSpecies.Null
     | str -> ExprSpecies.Species str
 
 let private pspeciesnullable = identifier |>> SpeciesOrNull
