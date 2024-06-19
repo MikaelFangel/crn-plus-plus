@@ -24,9 +24,7 @@ let private stepModule (oldstate:State) newstate cmp =
                                 (Map.add z (xconc/yconc) newstate, cmp)
     | ModuleS.Sqrt (x,y) -> let xconc = Map.find x oldstate
                             (Map.add y (sqrt xconc) newstate, cmp)
-    | ModuleS.Cmp (x,y) ->  let xconc = Map.find x oldstate
-                            let yconc = Map.find y oldstate
-                            (newstate, (xconc,yconc))
+    | ModuleS.Cmp (x,y) ->  (newstate, (x,y))
 
 let rec private step oldstate newstate cmp =
     function
@@ -36,34 +34,37 @@ let rec private step oldstate newstate cmp =
                         step oldstate state newcmp tail
     | Condition x::tail -> let (state, newcmp) = stepCondition oldstate newstate cmp x
                            step oldstate state newcmp tail
-and private stepCondition (oldstate:State) newstate cmp x =
-    match (x,cmp) with 
-    | (ConditionS.Gt cmd,(x,y)) ->  if x>y then step oldstate newstate cmp cmd
-                                    else (newstate, cmp)
-    | (ConditionS.Ge cmd,(x,y)) ->  if x>=y then step oldstate newstate cmp cmd
-                                    else (newstate, cmp)
-    | (ConditionS.Eq cmd,(x,y)) ->  if x=y then step oldstate newstate cmp cmd
-                                    else (newstate, cmp)
-    | (ConditionS.Lt cmd,(x,y)) ->  if x<y then step oldstate newstate cmp cmd
-                                    else (newstate, cmp)
-    | (ConditionS.Le cmd,(x,y)) ->  if x<=y then step oldstate newstate cmp cmd
-                                    else (newstate, cmp)
+and private stepCondition (oldstate:State) newstate cmp cond =
+    let (x,y) = cmp
+    let xconc = Map.find x oldstate
+    let yconc = Map.find y oldstate
+    match cond with 
+    | ConditionS.Gt cmd ->  if xconc>yconc then step oldstate newstate cmp cmd
+                            else (newstate, cmp)
+    | ConditionS.Ge cmd ->  if xconc>=yconc then step oldstate newstate cmp cmd
+                            else (newstate, cmp)
+    | ConditionS.Eq cmd ->  if xconc=yconc then step oldstate newstate cmp cmd
+                            else (newstate, cmp)
+    | ConditionS.Lt cmd ->  if xconc<yconc then step oldstate newstate cmp cmd
+                            else (newstate, cmp)
+    | ConditionS.Le cmd ->  if xconc<=yconc then step oldstate newstate cmp cmd
+                            else (newstate, cmp)
 
 let private initial program constmap = 
     let (CrnS.Crn crn, env) = program
     let concmap = Set.fold (fun map s -> Map.add s 0.0 map) Map.empty env.Species
-    List.fold (fun s x ->   let (concs, steps) = s
-                            match x with
-                            | RootS.Conc ( ConcS.Conc ( x, ValueS.Number y)) -> (Map.add x y concs, steps)
-                            | RootS.Conc ( ConcS.Conc ( x, ValueS.Literal y)) -> match Map.tryFind y constmap with
-                                                                                 | None -> raise (MissingConst y)
-                                                                                 | Some a -> (Map.add x a concs, steps)                               
-                            | RootS.Step x -> (concs, x::steps)) (concmap, []) crn
+    List.foldBack (fun x s ->   let (concs, steps) = s
+                                match x with
+                                | RootS.Conc ( ConcS.Conc ( x, ValueS.Number y)) -> (Map.add x y concs, steps)
+                                | RootS.Conc ( ConcS.Conc ( x, ValueS.Literal y)) ->  match Map.tryFind y constmap with
+                                                                                      | None -> raise (MissingConst y)
+                                                                                      | Some a -> (Map.add x a concs, steps)                               
+                                | RootS.Step x -> (concs, x::steps)) crn (concmap, [])
 
 let generate s0 steps =
-    (s0,(0.0,0.0), 0)
-    |> Seq.unfold (fun state ->
-        let (state, cmp, count) = state
+    (s0,("0","0"), 0)
+    |> Seq.unfold (fun st ->
+        let (state, cmp, count) = st
         if count < 0 then  // overflow
             None
         else
@@ -74,6 +75,7 @@ let generate s0 steps =
 let interpreter constmap (program:TypedAST) =
     try
         let (s0, steps) = initial program constmap
+        printfn "Steps %A" steps
         let res = generate s0 steps 
         Result.Ok res
     with

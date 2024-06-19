@@ -17,16 +17,16 @@ let testParser name =
     getTestFile name
     |> CRN.Parser.tryParse
     |> Result.bind CRN.Typechecker.typecheck
-    |> Result.bind (fun x -> Ok(CRN.Interpreter.interpreter (Map.ofList [ ("a0", 20); ("b0", 5) ]) x))
-
+    |> Result.bind (fun x -> CRN.Interpreter.interpreter Map.empty x)
+let filename = "euler.crn"
 printfn "Ran"
-printfn "%A" (testParser "division.crn")
+printfn "%A" (testParser filename)
 
-let parse = testParser "division.crn"
+let parse = testParser filename
 
 let unwrap =
     match parse with
     | Ok x -> x
     | _ -> failwith "Error"
 
-CRN.Visualization.plotState (fun s -> seq [ "r"; "a" ] |> Seq.contains s) 100 unwrap
+CRN.Visualization.plotState (fun s -> seq [ "e"] |> Seq.contains s) 100 unwrap
