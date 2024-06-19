@@ -35,10 +35,10 @@ let plotStateWithSize f ((width, height): Dimension) limit (state: CRN.Interpret
         |> Chart.combine
         |> Chart.withSize (width, height)
         |> Chart.withXAxis (
-            LinearAxis.init (Title = Title.init (Text = "Concentration"), RangeMode = StyleParam.RangeMode.ToZero)
+            LinearAxis.init (Title = Title.init (Text = "Time"), RangeMode = StyleParam.RangeMode.ToZero)
         )
         |> Chart.withYAxis (
-            LinearAxis.init (Title = Title.init (Text = "Time"), RangeMode = StyleParam.RangeMode.ToZero)
+            LinearAxis.init (Title = Title.init (Text = "Concentration"), RangeMode = StyleParam.RangeMode.ToZero)
         )
         |> Chart.show
     | None -> failwith "State is empty"
