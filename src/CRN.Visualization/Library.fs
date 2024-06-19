@@ -1,11 +1,11 @@
 ﻿module CRN.Visualization
 
 open Plotly.NET
-open CRN.Interpreter
 
+type Dimension = float * float
 
 // Converts a state to a list of points for a given species
-let internal convertState limit (state: CRN.Interpreter.State seq) species =
+let private convertState limit (state: CRN.Interpreter.State seq) species =
     let points =
         state
         |> Seq.take limit
@@ -16,16 +16,16 @@ let internal convertState limit (state: CRN.Interpreter.State seq) species =
     (species, points)
 
 // Creates a line plot for a species
-let internal plotSpecies (species, points) =
+let private plotSpecies (species, points) =
     let x = points |> List.map fst
     let y = points |> List.map snd
     Chart.Line(x = x, y = y, Name = species, ShowMarkers = false)
 
 // PLost the state of a CRN up to a given limit with a specific size
-let plotStateWithSize (width: float) (height: float) limit (state: CRN.Interpreter.State seq) =
+let plotStateWithSize f ((width, height): Dimension) limit (state: CRN.Interpreter.State seq) =
     match Seq.tryHead state with
     | Some(s) ->
-        let species = s |> Map.keys |> Seq.toList
+        let species = s |> Map.keys |> Seq.filter f |> Seq.toList
 
         species
         |> List.map (convertState limit state)
@@ -35,6 +35,6 @@ let plotStateWithSize (width: float) (height: float) limit (state: CRN.Interpret
         |> Chart.show
     | None -> failwith "State is empty"
 
-// Plot the state of a CRN up to a given limit
-let plotState limit state =
-    plotStateWithSize 1200.0 800.0 limit state
+// Plot the state of a CRN up to a given limit where the f function is used to filter species
+let plotState f limit state =
+    plotStateWithSize f (1200.0, 800.0) limit state
