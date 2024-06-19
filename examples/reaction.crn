@@ -1,0 +1,15 @@
+crn = {
+    conc[four, 4],
+    conc[divisor1, 1],
+    conc[divisor2, 3],
+    conc[pi, 0],
+    step[{
+        rxn[divisor1, divisor1 + divisor2, 1],
+        rxn[four + divisor1,,1]
+    }],
+    step[{
+        ld[divisor1Next, divisor1],
+        ld[divisor2Next, divisor2],
+        ld[piNext, pi]
+    }]
+}
