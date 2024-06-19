@@ -52,6 +52,11 @@ let ``Parser: factorial`` () =
     Assert.True(Result.isOk result, result.ToString())
 
 [<Fact>]
+let ``Parser: reaction`` () =
+    let result = testParser "reaction.crn"
+    Assert.True(Result.isOk result, result.ToString() )
+
+[<Fact>]
 let ``Parser: Self test`` () =
     let result = testParser "factorial.crn"
     match result with
