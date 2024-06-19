@@ -1,15 +1,16 @@
 ﻿module CRN.Visualization
 
 open Plotly.NET
+open CRN.Interpreter
 
-type State = seq<int * Map<string, float>>
 
 // Converts a state to a list of points for a given species
-let internal convertState limit (state: State) species =
+let internal convertState limit (state: CRN.Interpreter.State seq) species =
     let points =
         state
         |> Seq.take limit
-        |> Seq.map (fun s -> (fst s, (snd s).[species]))
+        |> Seq.indexed
+        |> Seq.map (fun (i, s) -> (i, s.[species]))
         |> Seq.toList
 
     (species, points)
@@ -21,10 +22,10 @@ let internal plotSpecies (species, points) =
     Chart.Line(x = x, y = y, Name = species, ShowMarkers = false)
 
 // PLost the state of a CRN up to a given limit with a specific size
-let plotStateWithSize (width: float) (height: float) limit (state: State) =
+let plotStateWithSize (width: float) (height: float) limit (state: CRN.Interpreter.State seq) =
     match Seq.tryHead state with
     | Some(s) ->
-        let species = s |> snd |> Map.keys |> Seq.toList
+        let species = s |> Map.keys |> Seq.toList
 
         species
         |> List.map (convertState limit state)

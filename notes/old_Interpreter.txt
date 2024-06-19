@@ -1,0 +1,64 @@
+module CRN.Interpreter
+open CRN.AST
+type State = Map<string, float>
+type res =   Add of string * float
+            | Cmp of float * float
+
+let stepModule (oldstate:State) cmp =
+    function
+    | ModuleS.Ld (x,y) -> let xconc = Map.find x oldstate
+                          Add (y, xconc)
+    | ModuleS.Add (x,y,z) -> let xconc = Map.find x oldstate
+                             let yconc = Map.find y oldstate
+                             Add (z, (xconc+yconc))
+    | ModuleS.Sub (x,y,z) ->    let xconc = Map.find x oldstate
+                                let yconc = Map.find y oldstate
+                                if xconc > yconc then
+                                    Add (z, (xconc-yconc))
+                                    else Add (z, 0)
+    | ModuleS.Mul (x,y,z) ->    let xconc = Map.find x oldstate
+                                let yconc = Map.find y oldstate
+                                Add (z, (xconc*yconc))
+    | ModuleS.Div (x,y,z) ->    let xconc = Map.find x oldstate
+                                let yconc = Map.find y oldstate
+                                Add (z, xconc/yconc)
+    | ModuleS.Sqrt (x,y) -> let xconc = Map.find x oldstate
+                            Add (y, (sqrt xconc))
+    | ModuleS.Cmp (x,y) ->  let xconc = Map.find x oldstate
+                            let yconc = Map.find y oldstate
+                            Cmp (xconc,yconc)
+
+let rec step (oldstate:State) cmp steps =
+    let changes = List.map (fun a ->    match a with  
+                                        | (Module x) ->   stepModule oldstate cmp x
+                                        | (Condition x) ->  stepCondition oldstate cmp x
+                                        | (Reaction x) -> let Reaction (reactant, products, speed) = x
+                                                          (oldstate, cmp) 
+                      ) steps
+    
+    List.fold (fun state c ->   let (map, cmp) = state
+                                match c with
+                                | Add (key, v) -> (Map.add key v map, cmp) 
+                                | Cmp (x,y) -> (map,(x,y))) (oldstate,cmp) changes
+and stepCondition (oldstate:State) cmp x:Map<string,float> * (float*float) =
+    match (x,cmp) with 
+    | (ConditionS.Gt cmd,(x,y)) ->  if x>y then step oldstate cmp cmd
+                                    else (oldstate, cmp)
+    | (ConditionS.Ge cmd,(x,y)) ->  if x>=y then step oldstate cmp cmd
+                                    else (oldstate, cmp)
+    | (ConditionS.Eq cmd,(x,y)) ->  if x=y then step oldstate cmp cmd
+                                    else (oldstate, cmp)
+    | (ConditionS.Lt cmd,(x,y)) ->  if x<y then step oldstate cmp cmd
+                                    else (oldstate, cmp)
+    | (ConditionS.Le cmd,(x,y)) ->  if x<=y then step oldstate cmp cmd
+                                    else (oldstate, cmp)
+let initial program env = 
+    List.fold (fun s0 x -> match x with
+                           | RootS.Conc (x, ValueS.Number y) -> Map.add x y s0
+                           | RootS.Conc (x, ValueS.Literal y) -> failwith "variables not handled for conc"
+                           | _ -> s0) Map.empty program
+let interpreter program =
+    let s0 = initial program
+    
+        
+    s0 

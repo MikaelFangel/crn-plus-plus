@@ -1,0 +1,5 @@
+MainS ::= RxnS
+        | Conc
+RxnS ::= '{'Expr'->'Expr','number'}'
+Conc ::= '['species '=' number']'
+Expr ::= species {+ Expr}

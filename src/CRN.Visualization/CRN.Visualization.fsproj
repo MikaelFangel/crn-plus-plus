@@ -13,4 +13,8 @@
     <PackageReference Include="Plotly.NET" Version="5.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\crncc\crncc.fsproj" />
+  </ItemGroup>
+
 </Project>
