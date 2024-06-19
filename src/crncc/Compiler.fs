@@ -99,4 +99,4 @@ let compileCrnS (ast: TypedAST) =
     let (conc, step) = (conc |> List.collect id, step |> List.collect id)
     let cspec = step |> List.length |> createClockSpecies
 
-    step |>List.mapi (fun i s -> addClockToStep cspec.[i * 3]  s)
+    (conc, step |>List.mapi (fun i s -> addClockToStep cspec.[i * 3]  s), cspec)
