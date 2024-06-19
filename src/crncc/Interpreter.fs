@@ -1,6 +1,8 @@
 module CRN.Interpreter
 open CRN.AST
 type State = Map<string, float>
+exception MissingConst of string
+exception ReactionEncountered of string
 
 let private stepModule (oldstate:State) newstate cmp =
     function
@@ -26,12 +28,10 @@ let private stepModule (oldstate:State) newstate cmp =
                             let yconc = Map.find y oldstate
                             (newstate, (xconc,yconc))
 
-
 let rec private step oldstate newstate cmp =
     function
     | [] -> (newstate, cmp)
-    | Reaction x::tail ->   let Reaction (reactant, products, speed) = x
-                            step oldstate newstate cmp tail
+    | Reaction x::tail ->  raise (ReactionEncountered "Found a reaction")
     | Module x::tail -> let (state, newcmp) = stepModule oldstate newstate cmp x
                         step oldstate state newcmp tail
     | Condition x::tail -> let (state, newcmp) = stepCondition oldstate newstate cmp x
@@ -48,14 +48,18 @@ and private stepCondition (oldstate:State) newstate cmp x =
                                     else (newstate, cmp)
     | (ConditionS.Le cmd,(x,y)) ->  if x<=y then step oldstate newstate cmp cmd
                                     else (newstate, cmp)
+
 let private initial program constmap = 
     let (CrnS.Crn crn, env) = program
     let concmap = Set.fold (fun map s -> Map.add s 0.0 map) Map.empty env.Species
     List.fold (fun s x ->   let (concs, steps) = s
                             match x with
                             | RootS.Conc ( ConcS.Conc ( x, ValueS.Number y)) -> (Map.add x y concs, steps)
-                            | RootS.Conc ( ConcS.Conc ( x, ValueS.Literal y)) -> (Map.add x (Map.find y constmap) concs, steps)
+                            | RootS.Conc ( ConcS.Conc ( x, ValueS.Literal y)) -> match Map.tryFind y constmap with
+                                                                                 | None -> raise (MissingConst y)
+                                                                                 | Some a -> (Map.add x a concs, steps)                               
                             | RootS.Step x -> (concs, x::steps)) (concmap, []) crn
+
 let generate s0 steps =
     (s0,(0.0,0.0), 0)
     |> Seq.unfold (fun state ->
@@ -65,18 +69,25 @@ let generate s0 steps =
         else
             let len = List.length steps
             let (state', cmp') = step state state cmp steps[count%len]
-            Some (state,(state', cmp', count+1) ))
+            Some (state,(state', cmp', count+1)))
 
 let interpreter constmap (program:TypedAST) =
-
-    let (s0, steps) = initial program constmap
-    let rec gen state cmp crn =
-        match crn with
-        | RootS.Step x::xs -> let (news, newcmp) = step state state cmp x
-                              state::gen news newcmp xs              
-        | _::xs -> gen state cmp xs
-        | [] ->  []
+    try
+        let (s0, steps) = initial program constmap
+        let res = generate s0 steps 
+        Result.Ok res
+    with
+        | MissingConst a -> Result.Error ["Could not find "+a]
+        | ReactionEncountered a -> Result.Error ["Could not find "+a]
+        | _ -> Result.Error ["Could not intepret"]
     
-    generate s0 steps 
+    //let rec gen state cmp crn =
+    //    match crn with
+    //    | RootS.Step x::xs -> let (news, newcmp) = step state state cmp x
+    //                          state::gen news newcmp xs              
+    //    | _::xs -> gen state cmp xs
+    //    | [] ->  []
+    
+    
     
 

@@ -2,6 +2,29 @@ module CRN.Compiler
 
 open CRN.AST
 
+[<TailCall>]
+let createClockSpecies nstep =
+    let n = nstep * 3
+
+    let rec createClockSpeciesInner acc =
+        function
+        | 0 -> List.rev acc
+        | n -> createClockSpeciesInner (ExprSpecies.Species $"X_{n}" :: acc) (n - 1)
+
+    createClockSpeciesInner [] n
+
+let addClotckToExprs (cspec: ExprSpecies) (side: ExprS) =
+    match side with
+    | ExprS.Expr(e) -> ExprS.Expr(cspec :: e)
+
+let addClockToRxn (cspec: ExprSpecies) (rxn: ReactionS) =
+    match rxn with
+    | ReactionS.Reaction(lhs, rhs, rate) ->
+        ReactionS.Reaction(addClotckToExprs cspec lhs, addClotckToExprs cspec rhs, rate)
+
+let addClockToStep (cspec: ExprSpecies) (step: ReactionS list) =
+    List.map (fun rxn -> addClockToRxn cspec rxn) step
+
 let createReactionWRate (rate: float) (lhs: SpeciesS list) (rhs: SpeciesS list) =
     match rhs with
     | [] ->
@@ -33,6 +56,19 @@ let compileModule (mods: ModuleS) =
         [ createReaction [ SpeciesS "XgtY"; x ] [ SpeciesS "XltY"; y ]
           createReaction [ SpeciesS "XltY"; x ] [ SpeciesS "XgtY"; x ] ]
 
+let injectWhenCmp =
+    List.collect (fun com ->
+        match com with
+        | CommandS.Module(m) ->
+            match m with
+            | ModuleS.Cmp(_, _) ->
+                [ createReaction [ SpeciesS "XgtY"; SpeciesS "XltY" ] [ SpeciesS "XltY"; SpeciesS "B" ]
+                  createReaction [ SpeciesS "B"; SpeciesS "XltY" ] [ SpeciesS "XltY"; SpeciesS "XltY" ]
+                  createReaction [ SpeciesS "XltY"; SpeciesS "XgtY" ] [ SpeciesS "XgtY"; SpeciesS "B" ]
+                  createReaction [ SpeciesS "B"; SpeciesS "XgtY" ] [ SpeciesS "XgtY"; SpeciesS "XgtY" ] ]
+            | _ -> []
+        | _ -> [])
+
 let rec compileCommand (com: CommandS) =
     match com with
     | CommandS.Module(m) -> compileModule m
@@ -50,8 +86,17 @@ and compileCondition (cond: ConditionS) =
 let compileRootS (conc, step) (root: RootS) =
     match root with
     | RootS.Conc(c) -> (c :: conc, step)
-    | RootS.Step(s) -> (conc, List.collect (fun s -> compileCommand s) s :: step)
+    | RootS.Step(s) ->
+        (conc,
+         List.collect (fun s -> compileCommand s) s :: injectWhenCmp s :: step
+         |> List.filter (fun e -> e <> []))
 
 let compileCrnS (ast: TypedAST) =
-    match ast |> fst with
-    CrnS.Crn(rootlist) -> rootlist |> List.map (fun r -> compileRootS ([], []) r)
+    let (conc, step) =
+        match ast |> fst with
+        | CrnS.Crn(rootlist) -> rootlist |> List.map (fun r -> compileRootS ([], []) r) |> List.unzip
+
+    let (conc, step) = (conc |> List.collect id, step |> List.collect id)
+    let cspec = step |> List.length |> createClockSpecies
+
+    (conc, step |>List.mapi (fun i s -> addClockToStep cspec.[i * 3]  s), cspec)
