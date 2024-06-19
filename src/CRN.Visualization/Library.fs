@@ -1,6 +1,7 @@
 ﻿module CRN.Visualization
 
 open Plotly.NET
+open Plotly.NET.LayoutObjects
 
 type Dimension = float * float
 
@@ -19,7 +20,9 @@ let private convertState limit (state: CRN.Interpreter.State seq) species =
 let private plotSpecies (species, points) =
     let x = points |> List.map fst
     let y = points |> List.map snd
+
     Chart.Line(x = x, y = y, Name = species, ShowMarkers = false)
+    |> Chart.withYAxis (LinearAxis.init (RangeMode = StyleParam.RangeMode.ToZero))
 
 // PLost the state of a CRN up to a given limit with a specific size
 let plotStateWithSize f ((width, height): Dimension) limit (state: CRN.Interpreter.State seq) =
