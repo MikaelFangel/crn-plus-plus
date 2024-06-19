@@ -33,6 +33,19 @@ let compileModule (mods: ModuleS) =
         [ createReaction [ SpeciesS "XgtY"; x ] [ SpeciesS "XltY"; y ]
           createReaction [ SpeciesS "XltY"; x ] [ SpeciesS "XgtY"; x ] ]
 
+let injectWhenCmp =
+    List.collect (fun com ->
+        match com with
+        | CommandS.Module(m) ->
+            match m with
+            | ModuleS.Cmp(_, _) ->
+                [ createReaction [ SpeciesS "XgtY"; SpeciesS "XltY" ] [ SpeciesS "XltY"; SpeciesS "B" ]
+                  createReaction [ SpeciesS "B"; SpeciesS "XltY" ] [ SpeciesS "XltY"; SpeciesS "XltY" ]
+                  createReaction [ SpeciesS "XltY"; SpeciesS "XgtY" ] [ SpeciesS "XgtY"; SpeciesS "B" ]
+                  createReaction [ SpeciesS "B"; SpeciesS "XgtY" ] [ SpeciesS "XgtY"; SpeciesS "XgtY" ] ]
+            | _ -> []
+        | _ -> [])
+
 let rec compileCommand (com: CommandS) =
     match com with
     | CommandS.Module(m) -> compileModule m
@@ -50,8 +63,8 @@ and compileCondition (cond: ConditionS) =
 let compileRootS (conc, step) (root: RootS) =
     match root with
     | RootS.Conc(c) -> (c :: conc, step)
-    | RootS.Step(s) -> (conc, List.collect (fun s -> compileCommand s) s :: step)
+    | RootS.Step(s) -> (conc, List.collect (fun s -> compileCommand s) s :: injectWhenCmp s :: step |> List.filter (fun e -> e = []))
 
 let compileCrnS (ast: TypedAST) =
     match ast |> fst with
-    CrnS.Crn(rootlist) -> rootlist |> List.map (fun r -> compileRootS ([], []) r)
+    | CrnS.Crn(rootlist) -> rootlist |> List.map (fun r -> compileRootS ([], []) r)
