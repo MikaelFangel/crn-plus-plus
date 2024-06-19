@@ -22,7 +22,6 @@ let private plotSpecies (species, points) =
     let y = points |> List.map snd
 
     Chart.Line(x = x, y = y, Name = species, ShowMarkers = false)
-    |> Chart.withYAxis (LinearAxis.init (RangeMode = StyleParam.RangeMode.ToZero))
 
 // PLost the state of a CRN up to a given limit with a specific size
 let plotStateWithSize f ((width, height): Dimension) limit (state: CRN.Interpreter.State seq) =
@@ -35,6 +34,12 @@ let plotStateWithSize f ((width, height): Dimension) limit (state: CRN.Interpret
         |> List.map plotSpecies
         |> Chart.combine
         |> Chart.withSize (width, height)
+        |> Chart.withXAxis (
+            LinearAxis.init (Title = Title.init (Text = "Concentration"), RangeMode = StyleParam.RangeMode.ToZero)
+        )
+        |> Chart.withYAxis (
+            LinearAxis.init (Title = Title.init (Text = "Time"), RangeMode = StyleParam.RangeMode.ToZero)
+        )
         |> Chart.show
     | None -> failwith "State is empty"
 
