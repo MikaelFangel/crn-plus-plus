@@ -1,0 +1,6 @@
+d[S]/dt = Sum_{rxn in CRN}(k(rxn)*netChange(S,rxn)) *Product_{R in reactant}([R]^{mrxn(R)})
+The right side is a sum over reactions in the CRN, where
+k(rxn) is a rate of reaction rxn, netChange(S,rxn) is a net
+change of molecules of S upon triggering of rxn (can be
+negative), and mrxn(R) is the multiplicity of reactant R in
+reaction rxn.
