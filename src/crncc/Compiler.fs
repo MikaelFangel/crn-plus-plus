@@ -63,7 +63,7 @@ and compileCondition (cond: ConditionS) =
 let compileRootS (conc, step) (root: RootS) =
     match root with
     | RootS.Conc(c) -> (c :: conc, step)
-    | RootS.Step(s) -> (conc, List.collect (fun s -> compileCommand s) s :: injectWhenCmp s :: step)
+    | RootS.Step(s) -> (conc, List.collect (fun s -> compileCommand s) s :: injectWhenCmp s :: step |> List.filter (fun e -> e = []))
 
 let compileCrnS (ast: TypedAST) =
     match ast |> fst with
