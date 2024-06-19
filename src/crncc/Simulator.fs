@@ -60,22 +60,21 @@ let private odeof current lhs rhs speed : OdeEq =
     let name = getname current
     let rhsthis = List.filter (fun elem -> elem = current) rhs
     // change indicates the multiplicity of the current element
-    let change = getchange lhs rhsthis name
-
-    let lhs =
-        List.map
-            (fun r ->
-                match r with
-                | ExprSpecies.Species(s) -> s)
-            lhs
+    let multiplicity = getchange lhs rhsthis name
+    printfn "%A %A %A" name speed multiplicity
 
     let ode' (Os: Map<string, float>) =
         let res =
-            Os
-            |> Map.filter (fun k _ -> List.contains k lhs)
-            |> Map.fold (fun acc _ v -> acc * v) 1.0
+            lhs
+            |> List.map getname
+            |> List.map (
+                fun spec -> 
+                let v = Map.find spec Os
+                v
+                )
+            |> List.fold (fun acc v -> acc * v) 1.0
 
-        speed * res * (float change)
+        speed * res * (float multiplicity)
 
     ode'
 
@@ -105,10 +104,12 @@ let private forwardEuler system state time =
 
 /// Solve a given ODE based on an initial state and step size
 let solveODE initial step reactions =
-    let h = step
-    let mutable state = initial
     let ode = createODE reactions
+    
+    initial
+    |> Seq.unfold (fun state ->
+        let newstate = forwardEuler ode state step
+        Some(newstate, newstate))
+    |> Seq.append (Seq.singleton initial)
 
-    Seq.initInfinite (fun _ ->
-        state <- forwardEuler ode state h
-        state)
+    
