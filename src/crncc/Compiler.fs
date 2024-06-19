@@ -92,5 +92,11 @@ let compileRootS (conc, step) (root: RootS) =
          |> List.filter (fun e -> e <> []))
 
 let compileCrnS (ast: TypedAST) =
-    match ast |> fst with
-    | CrnS.Crn(rootlist) -> rootlist |> List.map (fun r -> compileRootS ([], []) r)
+    let (conc, step) =
+        match ast |> fst with
+        | CrnS.Crn(rootlist) -> rootlist |> List.map (fun r -> compileRootS ([], []) r) |> List.unzip
+
+    let (conc, step) = (conc |> List.collect id, step |> List.collect id)
+    let cspec = step |> List.length |> createClockSpecies
+
+    step |>List.mapi (fun i s -> addClockToStep cspec.[i * 3]  s)
