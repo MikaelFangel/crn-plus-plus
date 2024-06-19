@@ -8,19 +8,26 @@ type A =
         | Var of string
 let rec count x =
     function
-    | [] -> 0
-    | y::ys when x=y -> 1+ (count x ys)
-    | y::ys -> count x ys
+    | ExprS.Expr [] -> 0
+    | ExprS.Expr (Species y::ys) when x=y -> 1+ (count x (ExprS.Expr ys))
+    | ExprS.Expr (y::ys) -> count x (ExprS.Expr ys)
 
-let rec math species =
+let rec mulreac =
+    function 
+    | ExprS.Expr [Species y] -> Var y
+    | ExprS.Expr ((Species y)::ys) -> Mul (Var y, mulreac (ExprS.Expr ys))
+    
+    
+let rec odeof species =
     function
     | [] -> Num 0
-    | Reaction (x,y,k)::xs ->   let before = count species x
-                                let after = count species y
-                                let change = after-before
-                                if change = 0 then math species xs 
-                                else Mul (Num ((float change)*k), Var "R") //change*k*reactants
+    | ReactionS.Reaction (x,y,k)::xs -> let before = count species x
+                                        let after = count species y
+                                        let change = after-before
+                                        if change = 0 then odeof species xs 
+                                        else let reactants = mulreac y
+                                             Add(Mul (Num ((float change)*k), reactants), odeof species xs) //change*k*reactants+ rest
 let rxnstoodesys rxnsys =
     let (rxns, env) = rxnsys  
-    Set.fold (fun acc x -> x::acc) [] (env.Species)
-    rxns
+    Set.fold (fun acc x -> (odeof x rxns)::acc) [] (env.Species)
+    
