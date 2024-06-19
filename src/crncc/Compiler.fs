@@ -2,6 +2,12 @@ module CRN.Compiler
 
 open CRN.AST
 
+// Flag species
+let XgtY = SpeciesS "XgtY"
+let XltY = SpeciesS "XltY"
+let YgtX = SpeciesS "YgtX"
+let YltX = SpeciesS "YltX"
+
 [<TailCall>]
 let createClockSpecies nstep =
     let n = nstep * 3
@@ -53,8 +59,8 @@ let compileModule (mods: ModuleS) =
     | ModuleS.Div(a, b, c) -> [ createReaction [ a ] [ a; c ]; createReaction [ b; c ] [ b ] ]
     | ModuleS.Sqrt(a, b) -> [ createReaction [ a ] [ a; b ]; createReactionWRate 0.5 [ b; b ] [] ]
     | ModuleS.Cmp(x, y) ->
-        [ createReaction [ SpeciesS "XgtY"; x ] [ SpeciesS "XltY"; y ]
-          createReaction [ SpeciesS "XltY"; x ] [ SpeciesS "XgtY"; x ] ]
+        [ createReaction [ XgtY; x ] [ XltY; y ]
+          createReaction [ XltY; x ] [ XgtY; x ] ]
 
 let injectWhenCmp =
     List.collect (fun com ->
@@ -62,10 +68,10 @@ let injectWhenCmp =
         | CommandS.Module(m) ->
             match m with
             | ModuleS.Cmp(_, _) ->
-                [ createReaction [ SpeciesS "XgtY"; SpeciesS "XltY" ] [ SpeciesS "XltY"; SpeciesS "B" ]
-                  createReaction [ SpeciesS "B"; SpeciesS "XltY" ] [ SpeciesS "XltY"; SpeciesS "XltY" ]
-                  createReaction [ SpeciesS "XltY"; SpeciesS "XgtY" ] [ SpeciesS "XgtY"; SpeciesS "B" ]
-                  createReaction [ SpeciesS "B"; SpeciesS "XgtY" ] [ SpeciesS "XgtY"; SpeciesS "XgtY" ] ]
+                [ createReaction [ XgtY; XltY ] [ XltY; SpeciesS "B" ]
+                  createReaction [ SpeciesS "B"; XltY ] [ XltY; XltY ]
+                  createReaction [ XltY; XgtY ] [ XgtY; SpeciesS "B" ]
+                  createReaction [ SpeciesS "B"; XgtY ] [ XgtY; XgtY ] ]
             | _ -> []
         | _ -> [])
 
@@ -99,4 +105,4 @@ let compileCrnS (ast: TypedAST) =
     let (conc, step) = (conc |> List.collect id, step |> List.collect id)
     let cspec = step |> List.length |> createClockSpecies
 
-    (conc, step |>List.mapi (fun i s -> addClockToStep cspec.[i * 3]  s), cspec)
+    (conc, step |> List.mapi (fun i s -> addClockToStep cspec.[i * 3] s), cspec)
