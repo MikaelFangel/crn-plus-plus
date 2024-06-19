@@ -2,11 +2,19 @@ module CRN.Compiler
 
 open CRN.AST
 
+type Env = Map<string, float>
+
 // Flag species
-let XgtY = SpeciesS "XgtY"
-let XltY = SpeciesS "XltY"
-let YgtX = SpeciesS "YgtX"
-let YltX = SpeciesS "YltX"
+let XgtY = ExprSpecies.Species "XgtY"
+let XltY = ExprSpecies.Species "XltY"
+let YgtX = ExprSpecies.Species "YgtX"
+let YltX = ExprSpecies.Species "YltX"
+let H = ExprSpecies.Species "H"
+let B = ExprSpecies.Species "B"
+
+let ExprSpeciesToSpecies =
+    function
+    | ExprSpecies.Species(s) -> s
 
 [<TailCall>]
 let createClockSpecies nstep =
@@ -52,15 +60,15 @@ let compileModule (mods: ModuleS) =
           createReaction [ c ] [] ]
     | ModuleS.Sub(a, b, c) ->
         [ createReaction [ a ] [ a; b ]
-          createReaction [ b ] [ b; SpeciesS "H" ]
+          createReaction [ b ] [ b; ExprSpeciesToSpecies B ]
           createReaction [ c ] []
-          createReaction [ c; SpeciesS "H" ] [] ]
+          createReaction [ c; ExprSpeciesToSpecies H ] [] ]
     | ModuleS.Mul(a, b, c) -> [ createReaction [ a; b ] [ a; b; c ]; createReaction [ c ] [] ]
     | ModuleS.Div(a, b, c) -> [ createReaction [ a ] [ a; c ]; createReaction [ b; c ] [ b ] ]
     | ModuleS.Sqrt(a, b) -> [ createReaction [ a ] [ a; b ]; createReactionWRate 0.5 [ b; b ] [] ]
     | ModuleS.Cmp(x, y) ->
-        [ createReaction [ XgtY; x ] [ XltY; y ]
-          createReaction [ XltY; x ] [ XgtY; x ] ]
+        [ createReaction [ ExprSpeciesToSpecies XgtY; x ] [ ExprSpeciesToSpecies XltY; y ]
+          createReaction [ ExprSpeciesToSpecies XltY; x ] [ ExprSpeciesToSpecies XgtY; x ] ]
 
 let injectWhenCmp =
     List.collect (fun com ->
@@ -68,10 +76,18 @@ let injectWhenCmp =
         | CommandS.Module(m) ->
             match m with
             | ModuleS.Cmp(_, _) ->
-                [ createReaction [ XgtY; XltY ] [ XltY; SpeciesS "B" ]
-                  createReaction [ SpeciesS "B"; XltY ] [ XltY; XltY ]
-                  createReaction [ XltY; XgtY ] [ XgtY; SpeciesS "B" ]
-                  createReaction [ SpeciesS "B"; XgtY ] [ XgtY; XgtY ] ]
+                [ createReaction
+                      [ ExprSpeciesToSpecies XgtY; ExprSpeciesToSpecies XltY ]
+                      [ ExprSpeciesToSpecies XltY; ExprSpeciesToSpecies B ]
+                  createReaction
+                      [ ExprSpeciesToSpecies B; ExprSpeciesToSpecies XltY ]
+                      [ ExprSpeciesToSpecies XltY; ExprSpeciesToSpecies XltY ]
+                  createReaction
+                      [ ExprSpeciesToSpecies XltY; ExprSpeciesToSpecies XgtY ]
+                      [ ExprSpeciesToSpecies XgtY; ExprSpeciesToSpecies B ]
+                  createReaction
+                      [ ExprSpeciesToSpecies B; ExprSpeciesToSpecies XgtY ]
+                      [ ExprSpeciesToSpecies XgtY; ExprSpeciesToSpecies XgtY ] ]
             | _ -> []
         | _ -> [])
 
@@ -97,6 +113,15 @@ let compileRootS (conc, step) (root: RootS) =
          List.collect (fun s -> compileCommand s) s :: injectWhenCmp s :: step
          |> List.filter (fun e -> e <> []))
 
+let ExprSpeciesToString =
+    function
+    | ExprSpecies.Species(s) -> s
+
+let intialEnv typeEnv env : Env =
+    typeEnv.Species
+    |> Seq.append (env |> List.map (fun s -> s |> ExprSpeciesToString))
+    |> Seq.fold (fun acc s -> Map.add s 0.0 acc) Map.empty
+
 let compileCrnS (ast: TypedAST) =
     let (conc, step) =
         match ast |> fst with
@@ -105,4 +130,6 @@ let compileCrnS (ast: TypedAST) =
     let (conc, step) = (conc |> List.collect id, step |> List.collect id)
     let cspec = step |> List.length |> createClockSpecies
 
+    let env =
+        intialEnv (snd ast) (cspec |> List.append [ XgtY; XltY; YgtX; YltX; H; B ])
     (conc, step |> List.mapi (fun i s -> addClockToStep cspec.[i * 3] s), cspec)
