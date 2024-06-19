@@ -91,9 +91,17 @@ let injectWhenCmp =
             | _ -> []
         | _ -> [])
 
-let rec compileCommand (com: CommandS) =
+let rec compileCommand (cmp: bool) (com: CommandS) =
     match com with
-    | CommandS.Module(m) -> compileModule m
+    | CommandS.Module(m) ->
+        if cmp then
+            compileModule m
+            |> List.map (fun r -> addClockToRxn XgtY r)
+            |> List.map (fun r -> addClockToRxn XltY r)
+            |> List.map (fun r -> addClockToRxn YgtX r)
+            |> List.map (fun r -> addClockToRxn YltX r)
+        else
+            compileModule m
     | CommandS.Reaction(r) -> [ r ]
     | CommandS.Condition(c) -> compileCondition c
 
@@ -103,14 +111,14 @@ and compileCondition (cond: ConditionS) =
     | ConditionS.Ge commands
     | ConditionS.Eq commands
     | ConditionS.Lt commands
-    | ConditionS.Le commands -> List.collect compileCommand commands
+    | ConditionS.Le commands -> List.collect (fun c -> compileCommand true c) commands
 
 let compileRootS (conc, step) (root: RootS) =
     match root with
     | RootS.Conc(c) -> (c :: conc, step)
     | RootS.Step(s) ->
         (conc,
-         List.collect (fun s -> compileCommand s) s :: injectWhenCmp s :: step
+         List.collect (fun s -> compileCommand false s) s :: injectWhenCmp s :: step
          |> List.filter (fun e -> e <> []))
 
 let ExprSpeciesToString =
@@ -132,4 +140,5 @@ let compileCrnS (ast: TypedAST) =
 
     let env =
         intialEnv (snd ast) (cspec |> List.append [ XgtY; XltY; YgtX; YltX; H; B ])
+
     (conc, step |> List.mapi (fun i s -> addClockToStep cspec.[i * 3] s), cspec)
