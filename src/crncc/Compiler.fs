@@ -10,7 +10,7 @@ let createReactionWRate (rate: float) (lhs: SpeciesS list) (rhs: SpeciesS list) 
             rhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr,
             rate
         )
-    | _ -> ReactionS.Reaction(lhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr, [ ExprSpecies.Null ] |> ExprS.Expr, rate)
+    | _ -> ReactionS.Reaction(lhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr, [] |> ExprS.Expr, rate)
 
 let createReaction = createReactionWRate 1.0
 

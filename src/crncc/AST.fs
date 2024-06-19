@@ -11,11 +11,10 @@ type TypingEnv =
 [<RequireQualifiedAccess>]
 type SpeciesS = string
 
-type ExprSpecies = Species of SpeciesS | Null
+type ExprSpecies = Species of SpeciesS
     with override this.ToString() =
             match this with 
                 Species(s) -> s.ToString()
-                | Null -> "Null"
 
 [<RequireQualifiedAccess>]
 type PNumberS = float

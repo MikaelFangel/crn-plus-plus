@@ -53,7 +53,6 @@ let rec private exprtyperleft env expr =
     let rec exprtyperleft' env expr used =
         match expr with 
             [] -> Ok(env)
-            | Null :: _ -> Error [sprintf "Null element on lhs"]
             | Species(head) :: tail -> 
                 let env = resolvereference head env
                 if Set.contains head used then
@@ -67,7 +66,6 @@ let private exprtyperright env expr =
     let rec exprtyperright' env expr used =
         match expr with 
             [] -> Ok(env)
-            | Null :: tail -> exprtyperright' env tail used
             | Species(head) :: tail -> 
                 if Set.contains head used then
                     Error [sprintf "Duplicate species %s in expression" head]
@@ -81,8 +79,7 @@ let private reactiontyper env reaction =
     match reaction with
     ReactionS.Reaction(_, _, speed) when speed <= 0.0 -> 
         Error [sprintf "Reaction speed %f cannot be 0 or below" speed]
-    | ReactionS.Reaction(ExprS.Expr [], _, _)
-    | ReactionS.Reaction(ExprS.Expr [ExprSpecies.Null], _, _) -> Error [sprintf "Attempt at immaculate conception of a species"]
+    | ReactionS.Reaction(ExprS.Expr [], _, _) -> Error [sprintf "Attempt at immaculate conception of a species"]
     | ReactionS.Reaction(ExprS.Expr expr1, ExprS.Expr expr2, _) -> 
         exprtyperleft env expr1 
         |> Result.bind (fun env -> exprtyperright env expr2)
