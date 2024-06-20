@@ -10,7 +10,9 @@ let XltY = ExprSpecies.Species "XltY"
 let YgtX = ExprSpecies.Species "YgtX"
 let YltX = ExprSpecies.Species "YltX"
 let H = ExprSpecies.Species "H"
-let B = ExprSpecies.Species "B"
+let B1 = ExprSpecies.Species "B1"
+let B2 = ExprSpecies.Species "B2"
+let CmpOff = ExprSpecies.Species "CmpOff"
 
 // Convert ExprSpecies to Species
 let exprSpeciesToSpecies =
@@ -73,28 +75,49 @@ let compileModule (mods: ModuleS) =
     | ModuleS.Sqrt(a, b) -> [ createReaction [ a ] [ a; b ]; createReactionWRate 0.5 [ b; b ] [] ]
     | ModuleS.Cmp(x, y) ->
         [ createReaction [ exprSpeciesToSpecies XgtY; y ] [ exprSpeciesToSpecies XltY; y ]
-          createReaction [ exprSpeciesToSpecies XltY; x ] [ exprSpeciesToSpecies XgtY; x ] ]
+          createReaction
+              [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies CmpOff ]
+              [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies CmpOff ]
+          createReaction [ exprSpeciesToSpecies XltY; x ] [ exprSpeciesToSpecies XgtY; x ]
+
+          createReaction [ exprSpeciesToSpecies YgtX; x ] [ exprSpeciesToSpecies YltX; x ]
+          createReaction
+              [ exprSpeciesToSpecies YltX; exprSpeciesToSpecies CmpOff ]
+              [ exprSpeciesToSpecies YgtX; exprSpeciesToSpecies CmpOff ]
+          createReaction [ exprSpeciesToSpecies YltX; y ] [ exprSpeciesToSpecies YgtX; y ] ]
 
 // Inject the approximated majority gate when a comparison is made
 let injectWhenCmp =
     List.collect (fun com ->
         match com with
-        | CommandS.Module(m) ->
-            match m with
-            | ModuleS.Cmp(_, _) ->
-                [ createReaction
-                      [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies XltY ]
-                      [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies B ]
-                  createReaction
-                      [ exprSpeciesToSpecies B; exprSpeciesToSpecies XltY ]
-                      [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies XltY ]
-                  createReaction
-                      [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies XgtY ]
-                      [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies B ]
-                  createReaction
-                      [ exprSpeciesToSpecies B; exprSpeciesToSpecies XgtY ]
-                      [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies XgtY ] ]
-            | _ -> []
+        | CommandS.Module(ModuleS.Cmp(_, _)) ->
+            // Approximated majority for X
+            [ createReaction
+                  [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies XltY ]
+                  [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies B1 ]
+              createReaction
+                  [ exprSpeciesToSpecies B1; exprSpeciesToSpecies XltY ]
+                  [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies XltY ]
+              createReaction
+                  [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies XgtY ]
+                  [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies B1 ]
+              createReaction
+                  [ exprSpeciesToSpecies B1; exprSpeciesToSpecies XgtY ]
+                  [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies XgtY ]
+
+              // Approximated majority for Y
+              createReaction
+                  [ exprSpeciesToSpecies YgtX; exprSpeciesToSpecies YltX ]
+                  [ exprSpeciesToSpecies YltX; exprSpeciesToSpecies B2 ]
+              createReaction
+                  [ exprSpeciesToSpecies B2; exprSpeciesToSpecies YltX ]
+                  [ exprSpeciesToSpecies YltX; exprSpeciesToSpecies YltX ]
+              createReaction
+                  [ exprSpeciesToSpecies YltX; exprSpeciesToSpecies YgtX ]
+                  [ exprSpeciesToSpecies YgtX; exprSpeciesToSpecies B2 ]
+              createReaction
+                  [ exprSpeciesToSpecies B2; exprSpeciesToSpecies YgtX ]
+                  [ exprSpeciesToSpecies YgtX; exprSpeciesToSpecies YgtX ] ]
         | _ -> [])
 
 // Compiles a single command to a list of reactions
@@ -111,7 +134,7 @@ and compileCondition (cond: ConditionS) =
         |> List.map (fun r -> addClockToRxn [ XgtY; YltX ] r)
     | ConditionS.Ge cmd ->
         List.collect (fun c -> compileCommand c) cmd
-        |> List.map (fun r -> addClockToRxn [ XgtY; YgtX; YltX ] r)
+        |> List.map (fun r -> addClockToRxn [ XgtY ] r)
     | ConditionS.Eq cmd ->
         List.collect (fun c -> compileCommand c) cmd
         |> List.map (fun r -> addClockToRxn [ XgtY; YgtX ] r)
@@ -120,7 +143,7 @@ and compileCondition (cond: ConditionS) =
         |> List.map (fun r -> addClockToRxn [ XltY; YgtX ] r)
     | ConditionS.Le cmd ->
         List.collect (fun c -> compileCommand c) cmd
-        |> List.map (fun r -> addClockToRxn [ XgtY; XltY; YgtX ] r)
+        |> List.map (fun r -> addClockToRxn [ YgtX ] r)
 
 // Compile the root of the AST to a list of reactions
 let compileRootS (conc, step) (root: RootS) =
@@ -142,14 +165,15 @@ let intialEnv typeEnv clocksp flag conc : Env =
         typeEnv.Species
         |> Seq.append (flag |> List.map (fun s -> s |> exprSpeciesToString))
         |> Seq.fold (fun acc s -> Map.add s 0.0 acc) Map.empty
-        |> Map.add (exprSpeciesToString XgtY) 0.25
-        |> Map.add (exprSpeciesToString XltY) 0.25
-        |> Map.add (exprSpeciesToString YgtX) 0.25
-        |> Map.add (exprSpeciesToString YltX) 0.25
+        |> Map.add (exprSpeciesToString XgtY) 0.50
+        |> Map.add (exprSpeciesToString XltY) 0.50
+        |> Map.add (exprSpeciesToString YgtX) 0.50
+        |> Map.add (exprSpeciesToString YltX) 0.50
+        |> Map.add (exprSpeciesToString CmpOff) 0.50
 
     let emptyState =
-        List.fold (fun map c -> Map.add (exprSpeciesToString c) 0.001 map) emptyState clocksp
-        |> Map.add ("X_3") (1.0 - (float (List.length clocksp) * 0.001))
+        List.fold (fun map c -> Map.add (exprSpeciesToString c) 0.0001 map) emptyState clocksp
+        |> Map.add ("X_3") (1.0 - (float (List.length clocksp) * 0.0001))
 
     List.fold
         (fun map c ->
@@ -188,7 +212,7 @@ let compileCrnS (ast: TypedAST) =
     let cspec = step |> List.length |> createClockSpecies
     let oscillator = createOscillator (cspec |> List.length) cspec.[0] cspec
 
-    let env = intialEnv (snd ast) cspec [ H; B ] conc
+    let env = intialEnv (snd ast) cspec [ H; B1; B2 ] conc
 
     let rxn =
         step
