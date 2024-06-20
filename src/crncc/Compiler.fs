@@ -24,7 +24,7 @@ let createClockSpecies nstep =
 
     let rec createClockSpeciesInner acc =
         function
-        | 0 -> List.rev acc
+        | 0 -> acc
         | n -> createClockSpeciesInner (ExprSpecies.Species $"X_{n}" :: acc) (n - 1)
 
     createClockSpeciesInner [] n
@@ -166,7 +166,7 @@ let rec createOscillator n firstspec cspec =
         [ createReaction
               [ exprSpeciesToSpecies c1; exprSpeciesToSpecies c2 ]
               [ exprSpeciesToSpecies c2; exprSpeciesToSpecies c2 ] ]
-        :: createOscillator (n - 1) firstspec cspec'
+        :: createOscillator (n - 1) firstspec (c2 :: cspec')
     | c :: cspec' ->
         [ createReaction
               [ exprSpeciesToSpecies c; exprSpeciesToSpecies firstspec ]
@@ -188,7 +188,7 @@ let compileCrnS (ast: TypedAST) =
 
     let rxn =
         step
-        |> List.mapi (fun i s -> addClockToStep cspec.[i * 3] s)
+        |> List.mapi (fun i s -> addClockToStep cspec.[3 + i * 3 - 1] s)
         |> List.append oscillator
         |> List.collect id
 
