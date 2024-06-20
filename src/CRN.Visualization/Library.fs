@@ -25,7 +25,7 @@ let private plotSpecies (species, points) =
     Chart.Line(x = x, y = y, Name = species, ShowMarkers = false)
 
 // PLost the state of a CRN up to a given limit with a specific size
-let plotStateWithSize f ((width, height): Dimension) limit (state: CRN.AST.State seq) =
+let plotStateWithSize f ((width, height): Dimension) limit (state: State seq) =
     match Seq.tryHead state with
     | Some(s) ->
         let species = s |> Map.keys |> Seq.filter f |> Seq.toList
