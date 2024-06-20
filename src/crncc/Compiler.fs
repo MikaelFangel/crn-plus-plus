@@ -197,5 +197,3 @@ let compileCrnS (ast: TypedAST) =
         |> List.collect id
 
     (env, rxn)
-
-    (env, rxn)
