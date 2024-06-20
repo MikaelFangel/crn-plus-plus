@@ -1,8 +1,7 @@
 module CRN.Interpreter
 open CRN.AST
-type State = Map<string, float>
+
 exception MissingConst of string
-exception ReactionEncountered of string
 
 let private stepModule (oldstate:State) newstate cmp =
     function
@@ -28,27 +27,30 @@ let private stepModule (oldstate:State) newstate cmp =
 
 let rec private step oldstate newstate cmp =
     function
-    | [] -> (newstate, cmp)
-    | Reaction x::tail ->  raise (ReactionEncountered "Found a reaction")
+    | [] -> Ok (newstate, cmp)
+    | Reaction x::tail ->  Error ("Found a reaction "+ (string (Reaction x)))
     | Module x::tail -> let (state, newcmp) = stepModule oldstate newstate cmp x
                         step oldstate state newcmp tail
-    | Condition x::tail -> let (state, newcmp) = stepCondition oldstate newstate cmp x
-                           step oldstate state newcmp tail
+    | Condition x::tail -> stepCondition oldstate newstate cmp x
+                           |> Result.bind (fun (state,newcmp) -> step oldstate state newcmp tail)
 and private stepCondition (oldstate:State) newstate cmp cond =
     let (x,y) = cmp
-    let xconc = Map.find x oldstate
-    let yconc = Map.find y oldstate
-    match cond with 
-    | ConditionS.Gt cmd ->  if xconc>yconc then step oldstate newstate cmp cmd
-                            else (newstate, cmp)
-    | ConditionS.Ge cmd ->  if xconc>=yconc then step oldstate newstate cmp cmd
-                            else (newstate, cmp)
-    | ConditionS.Eq cmd ->  if xconc=yconc then step oldstate newstate cmp cmd
-                            else (newstate, cmp)
-    | ConditionS.Lt cmd ->  if xconc<yconc then step oldstate newstate cmp cmd
-                            else (newstate, cmp)
-    | ConditionS.Le cmd ->  if xconc<=yconc then step oldstate newstate cmp cmd
-                            else (newstate, cmp)
+    let xfind = Map.tryFind x oldstate
+    let yfind = Map.tryFind y oldstate
+    match (xfind,yfind) with
+    | (None,_) -> Error ("Could not find flag "+ x) 
+    | (_,None) -> Error ("Could not find flag "+ y) 
+    | (Some xconc, Some yconc) ->   match cond with 
+                                    | ConditionS.Gt cmd ->  if xconc>yconc then step oldstate newstate cmp cmd
+                                                            else Ok (newstate, cmp)
+                                    | ConditionS.Ge cmd ->  if xconc>=yconc then step oldstate newstate cmp cmd
+                                                            else Ok (newstate, cmp)
+                                    | ConditionS.Eq cmd ->  if xconc=yconc then step oldstate newstate cmp cmd
+                                                            else Ok (newstate, cmp)
+                                    | ConditionS.Lt cmd ->  if xconc<yconc then step oldstate newstate cmp cmd
+                                                            else Ok (newstate, cmp)
+                                    | ConditionS.Le cmd ->  if xconc<=yconc then step oldstate newstate cmp cmd
+                                                            else Ok (newstate, cmp)
 
 let private initial program constmap = 
     let (CrnS.Crn crn, env) = program
@@ -62,25 +64,36 @@ let private initial program constmap =
                                 | RootS.Step x -> (concs, x::steps)) crn (concmap, [])
 
 let generate s0 steps =
+    let len = List.length steps
     (s0,("0","0"), 0)
     |> Seq.unfold (fun st ->
         let (state, cmp, count) = st
         if count < 0 then  // overflow
             None
         else
-            let len = List.length steps
-            let (state', cmp') = step state state cmp steps[count%len]
-            Some (state,(state', cmp', count+1)))
+            match step state state cmp steps[count%len] with
+            | Error a -> None
+            | Ok (state',cmp') -> Some (state,(state', cmp', count+1)))
+
+let generate' s0 steps=
+    let len = List.length steps
+    (Ok s0,("0","0"), 0)
+    |> Seq.unfold (fun state ->
+        match state with 
+        | (Error a,_,_) -> Some (Error a,(Error a,("0","0"), 0))
+        | (Ok map, cmp, count) ->
+            match step map map cmp steps[count%len] with
+            | Error a -> Some (Error a,(Error a,("0","0"), 0))
+            | Ok (newstate, newcmp) ->
+                Some (Ok map,(Ok newstate, newcmp, count+1)))
 
 let interpreter constmap (program:TypedAST) =
     try
         let (s0, steps) = initial program constmap
-        let res = generate s0 steps 
-        Result.Ok res
+        Ok (generate s0 steps)
     with
         | MissingConst a -> Result.Error ["Could not find "+a]
-        | ReactionEncountered a -> Result.Error ["Could not find "+a]
-        | _ -> Result.Error ["Could not intepret"]
+        | _ -> Result.Error ["Unknown error"]
     
     //let rec gen state cmp crn =
     //    match crn with
