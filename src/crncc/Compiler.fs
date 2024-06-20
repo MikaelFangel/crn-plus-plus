@@ -141,4 +141,4 @@ let compileCrnS (ast: TypedAST) =
     let env =
         intialEnv (snd ast) (cspec |> List.append [ XgtY; XltY; YgtX; YltX; H; B ])
 
-    (conc, step |> List.mapi (fun i s -> addClockToStep cspec.[i * 3] s), cspec)
+    (env, step |> List.mapi (fun i s -> addClockToStep cspec.[i * 3] s) |> List.collect id, cspec)
