@@ -64,7 +64,7 @@ let compileModule (mods: ModuleS) =
           createReaction [ b ] [ b; c ]
           createReaction [ c ] [] ]
     | ModuleS.Sub(a, b, c) ->
-        [ createReaction [ a ] [ a; b ]
+        [ createReaction [ a ] [ a; c ]
           createReaction [ b ] [ b; exprSpeciesToSpecies H ]
           createReaction [ c ] []
           createReaction [ c; exprSpeciesToSpecies H ] [] ]
@@ -72,7 +72,7 @@ let compileModule (mods: ModuleS) =
     | ModuleS.Div(a, b, c) -> [ createReaction [ a ] [ a; c ]; createReaction [ b; c ] [ b ] ]
     | ModuleS.Sqrt(a, b) -> [ createReaction [ a ] [ a; b ]; createReactionWRate 0.5 [ b; b ] [] ]
     | ModuleS.Cmp(x, y) ->
-        [ createReaction [ exprSpeciesToSpecies XgtY; x ] [ exprSpeciesToSpecies XltY; y ]
+        [ createReaction [ exprSpeciesToSpecies XgtY; y ] [ exprSpeciesToSpecies XltY; y ]
           createReaction [ exprSpeciesToSpecies XltY; x ] [ exprSpeciesToSpecies XgtY; x ] ]
 
 // Inject the approximated majority gate when a comparison is made
@@ -142,10 +142,10 @@ let intialEnv typeEnv clocksp flag conc : Env =
         typeEnv.Species
         |> Seq.append (flag |> List.map (fun s -> s |> exprSpeciesToString))
         |> Seq.fold (fun acc s -> Map.add s 0.0 acc) Map.empty
-        |> Map.add (exprSpeciesToString XgtY) 0.50
-        |> Map.add (exprSpeciesToString XltY) 0.50
-        |> Map.add (exprSpeciesToString YgtX) 0.50
-        |> Map.add (exprSpeciesToString YltX) 0.50
+        |> Map.add (exprSpeciesToString XgtY) 0.25
+        |> Map.add (exprSpeciesToString XltY) 0.25
+        |> Map.add (exprSpeciesToString YgtX) 0.25
+        |> Map.add (exprSpeciesToString YltX) 0.25
 
     let emptyState =
         List.fold (fun map c -> Map.add (exprSpeciesToString c) 0.001 map) emptyState clocksp
