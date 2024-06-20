@@ -103,13 +103,16 @@ let private forwardEuler system state time =
         v + time * result)
 
 /// Solve a given ODE based on an initial state and step size
-let solveODE initial step reactions =
+let solveODE (initial: Map<string, float>) step reactions =
     let ode = createODE reactions
+    let givenkeys = initial.Keys
+    let requiredkeys = ode.Eqs.Keys
+    let missing = Set.difference (Set.ofSeq requiredkeys) (Set.ofSeq givenkeys)
+    if missing.Count <> 0 then
+        printfn "Missing elements: %A" missing
     
     initial
     |> Seq.unfold (fun state ->
         let newstate = forwardEuler ode state step
         Some(newstate, newstate))
     |> Seq.append (Seq.singleton initial)
-
-    
