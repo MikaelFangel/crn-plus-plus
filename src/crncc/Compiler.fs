@@ -126,7 +126,7 @@ and compileCondition (cond: ConditionS) =
         |> List.map (fun r -> addClockToRxn [ XgtY; YltX ] r)
     | ConditionS.Ge cmd ->
         List.collect (fun c -> compileCommand c) cmd
-        |> List.map (fun r -> addClockToRxn [ XgtY; YgtX; YltX ] r)
+        |> List.map (fun r -> addClockToRxn [ XgtY; ] r)
     | ConditionS.Eq cmd ->
         List.collect (fun c -> compileCommand c) cmd
         |> List.map (fun r -> addClockToRxn [ XgtY; YgtX ] r)
@@ -135,7 +135,7 @@ and compileCondition (cond: ConditionS) =
         |> List.map (fun r -> addClockToRxn [ XltY; YgtX ] r)
     | ConditionS.Le cmd ->
         List.collect (fun c -> compileCommand c) cmd
-        |> List.map (fun r -> addClockToRxn [ XgtY; XltY; YgtX ] r)
+        |> List.map (fun r -> addClockToRxn [ YgtX ] r)
 
 // Compile the root of the AST to a list of reactions
 let compileRootS (conc, step) (root: RootS) =
