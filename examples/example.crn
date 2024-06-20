@@ -1,0 +1,6 @@
+crn = {
+    conc[a, 1], conc[b, 1], conc[c, 1],
+    step[{
+        add[a, b, c]
+    }]
+}
