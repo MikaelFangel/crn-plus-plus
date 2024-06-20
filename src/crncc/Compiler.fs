@@ -27,17 +27,17 @@ let createClockSpecies nstep =
 
     createClockSpeciesInner [] n
 
-let addClotckToExprs (cspec: ExprSpecies) (side: ExprS) =
+let addClotckToExprs (cspec: ExprSpecies list) (side: ExprS) =
     match side with
-    | ExprS.Expr(e) -> ExprS.Expr(cspec :: e)
+    | ExprS.Expr(e) -> ExprS.Expr(cspec @ e)
 
-let addClockToRxn (cspec: ExprSpecies) (rxn: ReactionS) =
+let addClockToRxn (cspec: ExprSpecies list) (rxn: ReactionS) =
     match rxn with
     | ReactionS.Reaction(lhs, rhs, rate) ->
         ReactionS.Reaction(addClotckToExprs cspec lhs, addClotckToExprs cspec rhs, rate)
 
 let addClockToStep (cspec: ExprSpecies) (step: ReactionS list) =
-    List.map (fun rxn -> addClockToRxn cspec rxn) step
+    List.map (fun rxn -> addClockToRxn [ cspec ] rxn) step
 
 let createReactionWRate (rate: float) (lhs: SpeciesS list) (rhs: SpeciesS list) =
     match rhs with
@@ -96,10 +96,7 @@ let rec compileCommand (cmp: bool) (com: CommandS) =
     | CommandS.Module(m) ->
         if cmp then
             compileModule m
-            |> List.map (fun r -> addClockToRxn XgtY r)
-            |> List.map (fun r -> addClockToRxn XltY r)
-            |> List.map (fun r -> addClockToRxn YgtX r)
-            |> List.map (fun r -> addClockToRxn YltX r)
+            |> List.map (fun r -> addClockToRxn [ XgtY; XgtY; YgtX; YltX ] r)
         else
             compileModule m
     | CommandS.Reaction(r) -> [ r ]
