@@ -46,14 +46,11 @@ let addClockToStep (cspec: ExprSpecies) (step: ReactionS list) =
 
 // Create a reaction with a given rate
 let createReactionWRate (rate: float) (lhs: SpeciesS list) (rhs: SpeciesS list) =
-    match rhs with
-    | [] ->
-        ReactionS.Reaction(
-            lhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr,
-            rhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr,
-            rate
-        )
-    | _ -> ReactionS.Reaction(lhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr, [] |> ExprS.Expr, rate)
+    ReactionS.Reaction(
+        lhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr,
+        rhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr,
+        rate
+    )
 
 // Create a reaction with rate default rate of 1.0
 let createReaction = createReactionWRate 1.0
