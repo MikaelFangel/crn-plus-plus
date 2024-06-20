@@ -3,10 +3,11 @@
 open Plotly.NET
 open Plotly.NET.LayoutObjects
 
+type State = Map<string, float>
 type Dimension = float * float
 
 // Converts a state to a list of points for a given species
-let private convertState limit (state: CRN.AST.State seq) species =
+let private convertState limit (state: State seq) species =
     let points =
         state
         |> Seq.take limit

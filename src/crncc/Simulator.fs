@@ -5,10 +5,11 @@ open CRN.AST
 /// The state of a system of key value pairs
 /// Each value represents the current concentration of a species
 /// Pass it to an OdeEq to evaluate the current change in the system
+type OdeState = Map<string, float>
 
 /// A single ODE Equation
 [<RequireQualifiedAccess>]
-type OdeEq = State -> float
+type OdeEq = OdeState -> float
 
 /// A system of ordinary differential equations
 type Ode = { Eqs: Map<string, OdeEq> }
