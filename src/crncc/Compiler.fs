@@ -126,6 +126,10 @@ let intialEnv typeEnv env : Env =
     typeEnv.Species
     |> Seq.append (env |> List.map (fun s -> s |> ExprSpeciesToString))
     |> Seq.fold (fun acc s -> Map.add s 0.0 acc) Map.empty
+    |> Map.add (ExprSpeciesToString XgtY) 0.50
+    |> Map.add (ExprSpeciesToString XltY) 0.50
+    |> Map.add (ExprSpeciesToString YgtX) 0.50
+    |> Map.add (ExprSpeciesToString YltX) 0.50
 
 let compileCrnS (ast: TypedAST) =
     let (conc, step) =
@@ -135,7 +139,6 @@ let compileCrnS (ast: TypedAST) =
     let (conc, step) = (conc |> List.collect id, step |> List.collect id)
     let cspec = step |> List.length |> createClockSpecies
 
-    let env =
-        intialEnv (snd ast) (cspec |> List.append [ XgtY; XltY; YgtX; YltX; H; B ])
+    let env = intialEnv (snd ast) (cspec |> List.append [ H; B ])
 
     (env, step |> List.mapi (fun i s -> addClockToStep cspec.[i * 3] s) |> List.collect id, cspec)
