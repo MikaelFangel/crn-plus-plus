@@ -61,7 +61,7 @@ let private odeof current lhs rhs speed : OdeEq =
     let rhsthis = List.filter (fun elem -> elem = current) rhs
     // change indicates the multiplicity of the current element
     let multiplicity = getchange lhs rhsthis name
-    printfn "%A %A %A" name speed multiplicity
+    
 
     let ode' (Os: Map<string, float>) =
         let res =

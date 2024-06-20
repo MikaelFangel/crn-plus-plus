@@ -82,12 +82,6 @@ let interpreter constmap (program:TypedAST) =
         | ReactionEncountered a -> Result.Error ["Could not find "+a]
         | _ -> Result.Error ["Could not intepret"]
     
-    //let rec gen state cmp crn =
-    //    match crn with
-    //    | RootS.Step x::xs -> let (news, newcmp) = step state state cmp x
-    //                          state::gen news newcmp xs              
-    //    | _::xs -> gen state cmp xs
-    //    | [] ->  []
     
     
     
