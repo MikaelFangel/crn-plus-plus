@@ -12,6 +12,7 @@ let YltX = ExprSpecies.Species "YltX"
 let H = ExprSpecies.Species "H"
 let B1 = ExprSpecies.Species "B1"
 let B2 = ExprSpecies.Species "B2"
+let CmpOff = ExprSpecies.Species "CmpOff"
 
 // Convert ExprSpecies to Species
 let exprSpeciesToSpecies =
@@ -74,9 +75,26 @@ let compileModule (mods: ModuleS) =
     | ModuleS.Sqrt(a, b) -> [ createReaction [ a ] [ a; b ]; createReactionWRate 0.5 [ b; b ] [] ]
     | ModuleS.Cmp(x, y) ->
         [ createReaction [ exprSpeciesToSpecies XgtY; y ] [ exprSpeciesToSpecies XltY; y ]
+          createReaction
+              [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies CmpOff ]
+              [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies CmpOff ]
           createReaction [ exprSpeciesToSpecies XltY; x ] [ exprSpeciesToSpecies XgtY; x ]
+
           createReaction [ exprSpeciesToSpecies YgtX; x ] [ exprSpeciesToSpecies YltX; x ]
+          createReaction
+              [ exprSpeciesToSpecies YltX; exprSpeciesToSpecies CmpOff ]
+              [ exprSpeciesToSpecies YgtX; exprSpeciesToSpecies CmpOff ]
           createReaction [ exprSpeciesToSpecies YltX; y ] [ exprSpeciesToSpecies YgtX; y ] ]
+
+(* 
+        rxn[XgtyFlag + y, XltyFlag + y, 1],
+            rxn[XltyFlag + ComparisonOffset, XgtyFlag + ComparisonOffset, 1],
+            rxn[XltyFlag + x, XgtyFlag + x, 1],
+            
+            rxn[YgtxFlag + x, YltxFlag + x, 1],
+            rxn[YltxFlag + ComparisonOffset, YgtxFlag + ComparisonOffset, 1],
+            rxn[YltxFlag + y, YgtxFlag + y, 1]
+            *)
 
 // Inject the approximated majority gate when a comparison is made
 let injectWhenCmp =
@@ -126,7 +144,7 @@ and compileCondition (cond: ConditionS) =
         |> List.map (fun r -> addClockToRxn [ XgtY; YltX ] r)
     | ConditionS.Ge cmd ->
         List.collect (fun c -> compileCommand c) cmd
-        |> List.map (fun r -> addClockToRxn [ XgtY; ] r)
+        |> List.map (fun r -> addClockToRxn [ XgtY ] r)
     | ConditionS.Eq cmd ->
         List.collect (fun c -> compileCommand c) cmd
         |> List.map (fun r -> addClockToRxn [ XgtY; YgtX ] r)
@@ -161,6 +179,7 @@ let intialEnv typeEnv clocksp flag conc : Env =
         |> Map.add (exprSpeciesToString XltY) 0.50
         |> Map.add (exprSpeciesToString YgtX) 0.50
         |> Map.add (exprSpeciesToString YltX) 0.50
+        |> Map.add (exprSpeciesToString CmpOff) 0.50
 
     let emptyState =
         List.fold (fun map c -> Map.add (exprSpeciesToString c) 0.0001 map) emptyState clocksp
