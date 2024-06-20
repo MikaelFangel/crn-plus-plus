@@ -50,29 +50,20 @@ let private checkmutation name env =
 
 /// left hand side values must be defined
 let rec private exprtyperleft env expr =
-    let rec exprtyperleft' env expr used =
-        match expr with 
-            [] -> Ok(env)
-            | Species(head) :: tail -> 
-                let env = resolvereference head env
-                if Set.contains head used then
-                    Error [sprintf "Duplicate species %s in expression" head]
-                else 
-                    exprtyperleft' env tail (Set.add head used)
-    exprtyperleft' env expr (Set [])
+    match expr with 
+        [] -> Ok(env)
+        | Species(head) :: tail -> 
+            let env = resolvereference head env
+            exprtyperleft env tail
+    
 
 /// right hand side values can be created
-let private exprtyperright env expr =
-    let rec exprtyperright' env expr used =
-        match expr with 
-            [] -> Ok(env)
-            | Species(head) :: tail -> 
-                if Set.contains head used then
-                    Error [sprintf "Duplicate species %s in expression" head]
-                else 
-                    let env' = addreference head env
-                    exprtyperright' env' tail (Set.add head used)
-    exprtyperright' env expr (Set [])
+let rec private exprtyperright env expr =
+    match expr with 
+        [] -> Ok(env)
+        | Species(head) :: tail -> 
+            let env' = addreference head env
+            exprtyperright env' tail
 
 /// Reaction speed must be above zero, left hand side must not be empty
 let private reactiontyper env reaction =
