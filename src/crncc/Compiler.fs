@@ -12,7 +12,7 @@ let YltX = ExprSpecies.Species "YltX"
 let H = ExprSpecies.Species "H"
 let B = ExprSpecies.Species "B"
 
-let ExprSpeciesToSpecies =
+let exprSpeciesToSpecies =
     function
     | ExprSpecies.Species(s) -> s
 
@@ -60,15 +60,15 @@ let compileModule (mods: ModuleS) =
           createReaction [ c ] [] ]
     | ModuleS.Sub(a, b, c) ->
         [ createReaction [ a ] [ a; b ]
-          createReaction [ b ] [ b; ExprSpeciesToSpecies B ]
+          createReaction [ b ] [ b; exprSpeciesToSpecies B ]
           createReaction [ c ] []
-          createReaction [ c; ExprSpeciesToSpecies H ] [] ]
+          createReaction [ c; exprSpeciesToSpecies H ] [] ]
     | ModuleS.Mul(a, b, c) -> [ createReaction [ a; b ] [ a; b; c ]; createReaction [ c ] [] ]
     | ModuleS.Div(a, b, c) -> [ createReaction [ a ] [ a; c ]; createReaction [ b; c ] [ b ] ]
     | ModuleS.Sqrt(a, b) -> [ createReaction [ a ] [ a; b ]; createReactionWRate 0.5 [ b; b ] [] ]
     | ModuleS.Cmp(x, y) ->
-        [ createReaction [ ExprSpeciesToSpecies XgtY; x ] [ ExprSpeciesToSpecies XltY; y ]
-          createReaction [ ExprSpeciesToSpecies XltY; x ] [ ExprSpeciesToSpecies XgtY; x ] ]
+        [ createReaction [ exprSpeciesToSpecies XgtY; x ] [ exprSpeciesToSpecies XltY; y ]
+          createReaction [ exprSpeciesToSpecies XltY; x ] [ exprSpeciesToSpecies XgtY; x ] ]
 
 let injectWhenCmp =
     List.collect (fun com ->
@@ -77,17 +77,17 @@ let injectWhenCmp =
             match m with
             | ModuleS.Cmp(_, _) ->
                 [ createReaction
-                      [ ExprSpeciesToSpecies XgtY; ExprSpeciesToSpecies XltY ]
-                      [ ExprSpeciesToSpecies XltY; ExprSpeciesToSpecies B ]
+                      [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies XltY ]
+                      [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies B ]
                   createReaction
-                      [ ExprSpeciesToSpecies B; ExprSpeciesToSpecies XltY ]
-                      [ ExprSpeciesToSpecies XltY; ExprSpeciesToSpecies XltY ]
+                      [ exprSpeciesToSpecies B; exprSpeciesToSpecies XltY ]
+                      [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies XltY ]
                   createReaction
-                      [ ExprSpeciesToSpecies XltY; ExprSpeciesToSpecies XgtY ]
-                      [ ExprSpeciesToSpecies XgtY; ExprSpeciesToSpecies B ]
+                      [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies XgtY ]
+                      [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies B ]
                   createReaction
-                      [ ExprSpeciesToSpecies B; ExprSpeciesToSpecies XgtY ]
-                      [ ExprSpeciesToSpecies XgtY; ExprSpeciesToSpecies XgtY ] ]
+                      [ exprSpeciesToSpecies B; exprSpeciesToSpecies XgtY ]
+                      [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies XgtY ] ]
             | _ -> []
         | _ -> [])
 
@@ -140,13 +140,13 @@ let rec createOscillator n firstspec cspec =
     match cspec with
     | c1 :: c2 :: cspec' ->
         [ createReaction
-              [ ExprSpeciesToSpecies c1; ExprSpeciesToSpecies c2 ]
-              [ ExprSpeciesToSpecies c2; ExprSpeciesToSpecies c2 ] ]
+              [ exprSpeciesToSpecies c1; exprSpeciesToSpecies c2 ]
+              [ exprSpeciesToSpecies c2; exprSpeciesToSpecies c2 ] ]
         :: createOscillator (n - 1) firstspec cspec'
     | c :: cspec' ->
         [ createReaction
-              [ ExprSpeciesToSpecies c; ExprSpeciesToSpecies firstspec ]
-              [ ExprSpeciesToSpecies firstspec; ExprSpeciesToSpecies firstspec ] ]
+              [ exprSpeciesToSpecies c; exprSpeciesToSpecies firstspec ]
+              [ exprSpeciesToSpecies firstspec; exprSpeciesToSpecies firstspec ] ]
         :: createOscillator (n - 1) firstspec cspec'
     | [] -> []
 
