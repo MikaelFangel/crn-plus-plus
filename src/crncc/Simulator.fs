@@ -100,7 +100,7 @@ let private forwardEuler system state time =
     |> Map.map (fun k v ->
         let eq = (system.Eqs.Item k)
         let result = eq state
-        v + time * result)
+        v + time * result |> max 0.0)
 
 /// Solve a given ODE based on an initial state and step size
 let solveODE (initial: Map<string, float>) step reactions =
