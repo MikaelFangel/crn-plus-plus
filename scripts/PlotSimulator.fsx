@@ -9,8 +9,6 @@
 open CRN.Simulator
 open CRN.AST
 
-let initial = Map.ofList ["A", 9.0; "B", 0.0]
-
 //Load
 let ldreaction = 
         [ReactionS.Reaction(
@@ -26,9 +24,31 @@ let ldreaction =
             ),
             ExprS.Expr([]), 1.0
          )]
-
 //Addition
 let addreaction = 
+        [ReactionS.Reaction(
+            ExprS.Expr(
+                [Species("A")]), 
+            ExprS.Expr(
+                [Species("A")
+                 Species("C")
+                ]), 1.0)
+         ReactionS.Reaction(
+            ExprS.Expr(
+                [Species("B")]), 
+            ExprS.Expr(
+                [Species("B")
+                 Species("C")
+                ]), 1.0)
+         ReactionS.Reaction(
+            ExprS.Expr(
+                [Species("C")]
+            ),
+            ExprS.Expr([]), 1.0
+         )]
+
+//Subtraction
+let subreaction = 
         [ReactionS.Reaction(
             ExprS.Expr(
                 [Species("A")]), 
@@ -104,9 +124,35 @@ let sqrtreaction =
                 []), 0.5
          )]
 
+//clock simulator
+let clockreaction = 
+        [ReactionS.Reaction(
+            ExprS.Expr(
+                [Species("A")
+                 Species("B")]), 
+            ExprS.Expr(
+                [Species("B")
+                 Species("B")]), 1.0)
+         ReactionS.Reaction(
+            ExprS.Expr(
+                [Species("B")
+                 Species("C")]
+            ),
+            ExprS.Expr(
+                [Species("C")
+                 Species("C")]), 1.0)
+         ReactionS.Reaction(
+            ExprS.Expr(
+                [Species("C")
+                 Species("A")]
+            ),
+            ExprS.Expr(
+                [Species("A")
+                 Species("A")]), 1.0
+        )]
 
 
+let initial = Map.ofList ["A", 0.98; "B", 0.01; "C", 0.01; "H", 0.0] 
 
-
-let test = (solveODE initial 0.1 sqrtreaction)
-CRN.Visualization.plotState (fun s -> seq [ "B" ] |> Seq.contains s) 50 test
+let test = (solveODE initial 0.1 clockreaction)
+CRN.Visualization.plotState (fun s -> seq [ "A"; "B"; "C" ] |> Seq.contains s) 5000 test

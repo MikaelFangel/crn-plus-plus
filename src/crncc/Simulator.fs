@@ -5,11 +5,10 @@ open CRN.AST
 /// The state of a system of key value pairs
 /// Each value represents the current concentration of a species
 /// Pass it to an OdeEq to evaluate the current change in the system
-type OdeState = Map<string, float>
 
 /// A single ODE Equation
 [<RequireQualifiedAccess>]
-type OdeEq = OdeState -> float
+type OdeEq = State -> float
 
 /// A system of ordinary differential equations
 type Ode = { Eqs: Map<string, OdeEq> }
@@ -61,7 +60,7 @@ let private odeof current lhs rhs speed : OdeEq =
     let rhsthis = List.filter (fun elem -> elem = current) rhs
     // change indicates the multiplicity of the current element
     let multiplicity = getchange lhs rhsthis name
-    printfn "%A %A %A" name speed multiplicity
+    
 
     let ode' (Os: Map<string, float>) =
         let res =

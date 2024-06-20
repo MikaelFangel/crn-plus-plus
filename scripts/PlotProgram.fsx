@@ -17,8 +17,8 @@ let testParser name =
     getTestFile name
     |> CRN.Parser.tryParse
     |> Result.bind CRN.Typechecker.typecheck
-    |> Result.bind (fun x -> CRN.Interpreter.interpreter (Map.ofList [ ("a0", 20); ("b0", 5) ]) x)
-let filename = "division.crn"
+    |> Result.bind (fun x -> CRN.Interpreter.interpreter (Map.ofList [ ("f0", 10) ]) x)
+let filename = "factorial.crn"
 printfn "Ran"
 printfn "%A" (testParser filename)
 
@@ -31,4 +31,4 @@ let unwrap =
 
 
 
-CRN.Visualization.plotState (fun s -> seq [ "r"; "a" ] |> Seq.contains s) 100 unwrap
+CRN.Visualization.plotState (fun s -> seq [ "f"] |> Seq.contains s) 100 unwrap

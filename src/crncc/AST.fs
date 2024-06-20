@@ -1,4 +1,5 @@
 module CRN.AST
+type State = Map<string, float>
 
 type TypingEnv =
     {
