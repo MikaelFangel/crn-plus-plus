@@ -135,19 +135,19 @@ let compileRootS (conc, step) (root: RootS) =
          |> List.filter (fun e -> e <> []))
 
 // Convert ExprSpecies to string
-let ExprSpeciesToString =
+let exprSpeciesToString =
     function
     | ExprSpecies.Species(s) -> s
 
 // Initialized the environment with the initial values
 let intialEnv typeEnv env : Env =
     typeEnv.Species
-    |> Seq.append (env |> List.map (fun s -> s |> ExprSpeciesToString))
+    |> Seq.append (env |> List.map (fun s -> s |> exprSpeciesToString))
     |> Seq.fold (fun acc s -> Map.add s 0.0 acc) Map.empty
-    |> Map.add (ExprSpeciesToString XgtY) 0.50
-    |> Map.add (ExprSpeciesToString XltY) 0.50
-    |> Map.add (ExprSpeciesToString YgtX) 0.50
-    |> Map.add (ExprSpeciesToString YltX) 0.50
+    |> Map.add (exprSpeciesToString XgtY) 0.50
+    |> Map.add (exprSpeciesToString XltY) 0.50
+    |> Map.add (exprSpeciesToString YgtX) 0.50
+    |> Map.add (exprSpeciesToString YltX) 0.50
 
 // Create the oscillator for the clock species
 let rec createOscillator n firstspec cspec =
