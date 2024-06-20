@@ -81,22 +81,19 @@ let compileModule (mods: ModuleS) =
 let injectWhenCmp =
     List.collect (fun com ->
         match com with
-        | CommandS.Module(m) ->
-            match m with
-            | ModuleS.Cmp(_, _) ->
-                [ createReaction
-                      [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies XltY ]
-                      [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies B ]
-                  createReaction
-                      [ exprSpeciesToSpecies B; exprSpeciesToSpecies XltY ]
-                      [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies XltY ]
-                  createReaction
-                      [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies XgtY ]
-                      [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies B ]
-                  createReaction
-                      [ exprSpeciesToSpecies B; exprSpeciesToSpecies XgtY ]
-                      [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies XgtY ] ]
-            | _ -> []
+        | CommandS.Module(ModuleS.Cmp(_, _)) ->
+            [ createReaction
+                  [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies XltY ]
+                  [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies B ]
+              createReaction
+                  [ exprSpeciesToSpecies B; exprSpeciesToSpecies XltY ]
+                  [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies XltY ]
+              createReaction
+                  [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies XgtY ]
+                  [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies B ]
+              createReaction
+                  [ exprSpeciesToSpecies B; exprSpeciesToSpecies XgtY ]
+                  [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies XgtY ] ]
         | _ -> [])
 
 // Compiles a single command to a list of reactions
