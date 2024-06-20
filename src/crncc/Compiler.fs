@@ -140,14 +140,27 @@ let exprSpeciesToString =
     | ExprSpecies.Species(s) -> s
 
 // Initialized the environment with the initial values
-let intialEnv typeEnv env : Env =
-    typeEnv.Species
-    |> Seq.append (env |> List.map (fun s -> s |> exprSpeciesToString))
-    |> Seq.fold (fun acc s -> Map.add s 0.0 acc) Map.empty
-    |> Map.add (exprSpeciesToString XgtY) 0.50
-    |> Map.add (exprSpeciesToString XltY) 0.50
-    |> Map.add (exprSpeciesToString YgtX) 0.50
-    |> Map.add (exprSpeciesToString YltX) 0.50
+let intialEnv typeEnv env conc : Env =
+    let emptyState =
+        typeEnv.Species
+        |> Seq.append (env |> List.map (fun s -> s |> exprSpeciesToString))
+        |> Seq.fold (fun acc s -> Map.add s 0.0 acc) Map.empty
+        |> Map.add (exprSpeciesToString XgtY) 0.50
+        |> Map.add (exprSpeciesToString XltY) 0.50
+        |> Map.add (exprSpeciesToString YgtX) 0.50
+        |> Map.add (exprSpeciesToString YltX) 0.50
+
+    List.fold
+        (fun map c ->
+            match c with
+            | ConcS.Conc(s, v) ->
+                Map.add
+                    s
+                    (match v with
+                     | ValueS.Number(v) -> v)
+                    map)
+        emptyState
+        conc
 
 // Create the oscillator for the clock species
 let rec createOscillator n firstspec cspec =
@@ -174,7 +187,7 @@ let compileCrnS (ast: TypedAST) =
     let cspec = step |> List.length |> createClockSpecies
     let oscillator = createOscillator (cspec |> List.length) cspec.[0] cspec
 
-    let env = intialEnv (snd ast) (cspec |> List.append [ H; B ])
+    let env = intialEnv (snd ast) (cspec |> List.append [ H; B ]) conc
 
     let rxn =
         step
