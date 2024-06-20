@@ -91,31 +91,36 @@ let injectWhenCmp =
             | _ -> []
         | _ -> [])
 
-let rec compileCommand (cmp: bool) (com: CommandS) =
+let rec compileCommand (com: CommandS) =
     match com with
-    | CommandS.Module(m) ->
-        if cmp then
-            compileModule m
-            |> List.map (fun r -> addClockToRxn [ XgtY; XgtY; YgtX; YltX ] r)
-        else
-            compileModule m
+    | CommandS.Module(m) -> compileModule m
     | CommandS.Reaction(r) -> [ r ]
     | CommandS.Condition(c) -> compileCondition c
 
 and compileCondition (cond: ConditionS) =
     match cond with
-    | ConditionS.Gt commands
-    | ConditionS.Ge commands
-    | ConditionS.Eq commands
-    | ConditionS.Lt commands
-    | ConditionS.Le commands -> List.collect (fun c -> compileCommand true c) commands
+    | ConditionS.Gt cmd ->
+        List.collect (fun c -> compileCommand c) cmd
+        |> List.map (fun r -> addClockToRxn [ XgtY; YltX ] r)
+    | ConditionS.Ge cmd ->
+        List.collect (fun c -> compileCommand c) cmd
+        |> List.map (fun r -> addClockToRxn [ XgtY; YgtX; YltX ] r)
+    | ConditionS.Eq cmd ->
+        List.collect (fun c -> compileCommand c) cmd
+        |> List.map (fun r -> addClockToRxn [ XgtY; YgtX ] r)
+    | ConditionS.Lt cmd ->
+        List.collect (fun c -> compileCommand c) cmd
+        |> List.map (fun r -> addClockToRxn [ XltY; YgtX ] r)
+    | ConditionS.Le cmd ->
+        List.collect (fun c -> compileCommand c) cmd
+        |> List.map (fun r -> addClockToRxn [ XgtY; XltY; YgtX ] r)
 
 let compileRootS (conc, step) (root: RootS) =
     match root with
     | RootS.Conc(c) -> (c :: conc, step)
     | RootS.Step(s) ->
         (conc,
-         List.collect (fun s -> compileCommand false s) s :: injectWhenCmp s :: step
+         List.collect (fun s -> compileCommand s) s :: injectWhenCmp s :: step
          |> List.filter (fun e -> e <> []))
 
 let ExprSpeciesToString =
