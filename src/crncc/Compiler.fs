@@ -136,6 +136,20 @@ let intialEnv typeEnv env : Env =
     |> Map.add (ExprSpeciesToString YgtX) 0.50
     |> Map.add (ExprSpeciesToString YltX) 0.50
 
+let rec createOscillator n firstspec cspec =
+    match cspec with
+    | c1 :: c2 :: cspec' ->
+        [ createReaction
+              [ ExprSpeciesToSpecies c1; ExprSpeciesToSpecies c2 ]
+              [ ExprSpeciesToSpecies c2; ExprSpeciesToSpecies c2 ] ]
+        :: createOscillator (n - 1) firstspec cspec'
+    | c :: cspec' ->
+        [ createReaction
+              [ ExprSpeciesToSpecies c; ExprSpeciesToSpecies firstspec ]
+              [ ExprSpeciesToSpecies firstspec; ExprSpeciesToSpecies firstspec ] ]
+        :: createOscillator (n - 1) firstspec cspec'
+    | [] -> []
+
 let compileCrnS (ast: TypedAST) =
     let (conc, step) =
         match ast |> fst with
@@ -143,7 +157,14 @@ let compileCrnS (ast: TypedAST) =
 
     let (conc, step) = (conc |> List.collect id, step |> List.collect id)
     let cspec = step |> List.length |> createClockSpecies
+    let oscillator = createOscillator (cspec |> List.length) cspec.[0] cspec
 
     let env = intialEnv (snd ast) (cspec |> List.append [ H; B ])
 
-    (env, step |> List.mapi (fun i s -> addClockToStep cspec.[i * 3] s) |> List.collect id, cspec)
+    let rxn =
+        step
+        |> List.mapi (fun i s -> addClockToStep cspec.[i * 3] s)
+        |> List.append oscillator
+        |> List.collect id
+
+    (env, rxn)
