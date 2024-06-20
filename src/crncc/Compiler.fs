@@ -68,7 +68,7 @@ let compileModule (mods: ModuleS) =
           createReaction [ c ] [] ]
     | ModuleS.Sub(a, b, c) ->
         [ createReaction [ a ] [ a; b ]
-          createReaction [ b ] [ b; exprSpeciesToSpecies B ]
+          createReaction [ b ] [ b; exprSpeciesToSpecies H ]
           createReaction [ c ] []
           createReaction [ c; exprSpeciesToSpecies H ] [] ]
     | ModuleS.Mul(a, b, c) -> [ createReaction [ a; b ] [ a; b; c ]; createReaction [ c ] [] ]
