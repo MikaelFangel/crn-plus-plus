@@ -12,10 +12,12 @@ let YltX = ExprSpecies.Species "YltX"
 let H = ExprSpecies.Species "H"
 let B = ExprSpecies.Species "B"
 
+// Convert ExprSpecies to Species
 let exprSpeciesToSpecies =
     function
     | ExprSpecies.Species(s) -> s
 
+// Create clock species by given the number of steps
 [<TailCall>]
 let createClockSpecies nstep =
     let n = nstep * 3
@@ -27,18 +29,22 @@ let createClockSpecies nstep =
 
     createClockSpeciesInner [] n
 
+// Add a list of species to a side of an reaction
 let addClotckToExprs (cspec: ExprSpecies list) (side: ExprS) =
     match side with
     | ExprS.Expr(e) -> ExprS.Expr(cspec @ e)
 
+// Add a list species to a reaction
 let addClockToRxn (cspec: ExprSpecies list) (rxn: ReactionS) =
     match rxn with
     | ReactionS.Reaction(lhs, rhs, rate) ->
         ReactionS.Reaction(addClotckToExprs cspec lhs, addClotckToExprs cspec rhs, rate)
 
+// Add a list species to a step
 let addClockToStep (cspec: ExprSpecies) (step: ReactionS list) =
     List.map (fun rxn -> addClockToRxn [ cspec ] rxn) step
 
+// Create a reaction with a given rate
 let createReactionWRate (rate: float) (lhs: SpeciesS list) (rhs: SpeciesS list) =
     match rhs with
     | [] ->
@@ -49,8 +55,10 @@ let createReactionWRate (rate: float) (lhs: SpeciesS list) (rhs: SpeciesS list) 
         )
     | _ -> ReactionS.Reaction(lhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr, [] |> ExprS.Expr, rate)
 
+// Create a reaction with rate default rate of 1.0
 let createReaction = createReactionWRate 1.0
 
+// Compile a module to a list of reactions
 let compileModule (mods: ModuleS) =
     match mods with
     | ModuleS.Ld(a, b) -> [ createReaction [ a ] [ a; b ]; createReaction [ b ] [] ]
@@ -70,6 +78,7 @@ let compileModule (mods: ModuleS) =
         [ createReaction [ exprSpeciesToSpecies XgtY; x ] [ exprSpeciesToSpecies XltY; y ]
           createReaction [ exprSpeciesToSpecies XltY; x ] [ exprSpeciesToSpecies XgtY; x ] ]
 
+// Inject the approximated majority gate when a comparison is made
 let injectWhenCmp =
     List.collect (fun com ->
         match com with
@@ -91,6 +100,7 @@ let injectWhenCmp =
             | _ -> []
         | _ -> [])
 
+// Compiles a single command to a list of reactions
 let rec compileCommand (com: CommandS) =
     match com with
     | CommandS.Module(m) -> compileModule m
@@ -115,6 +125,7 @@ and compileCondition (cond: ConditionS) =
         List.collect (fun c -> compileCommand c) cmd
         |> List.map (fun r -> addClockToRxn [ XgtY; XltY; YgtX ] r)
 
+// Compile the root of the AST to a list of reactions
 let compileRootS (conc, step) (root: RootS) =
     match root with
     | RootS.Conc(c) -> (c :: conc, step)
@@ -123,10 +134,12 @@ let compileRootS (conc, step) (root: RootS) =
          List.collect (fun s -> compileCommand s) s :: injectWhenCmp s :: step
          |> List.filter (fun e -> e <> []))
 
+// Convert ExprSpecies to string
 let ExprSpeciesToString =
     function
     | ExprSpecies.Species(s) -> s
 
+// Initialized the environment with the initial values
 let intialEnv typeEnv env : Env =
     typeEnv.Species
     |> Seq.append (env |> List.map (fun s -> s |> ExprSpeciesToString))
@@ -136,6 +149,7 @@ let intialEnv typeEnv env : Env =
     |> Map.add (ExprSpeciesToString YgtX) 0.50
     |> Map.add (ExprSpeciesToString YltX) 0.50
 
+// Create the oscillator for the clock species
 let rec createOscillator n firstspec cspec =
     match cspec with
     | c1 :: c2 :: cspec' ->
@@ -150,6 +164,7 @@ let rec createOscillator n firstspec cspec =
         :: createOscillator (n - 1) firstspec cspec'
     | [] -> []
 
+// Compile a CRN to a list of reactions
 let compileCrnS (ast: TypedAST) =
     let (conc, step) =
         match ast |> fst with
