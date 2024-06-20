@@ -10,7 +10,8 @@ let XltY = ExprSpecies.Species "XltY"
 let YgtX = ExprSpecies.Species "YgtX"
 let YltX = ExprSpecies.Species "YltX"
 let H = ExprSpecies.Species "H"
-let B = ExprSpecies.Species "B"
+let B1 = ExprSpecies.Species "B1"
+let B2 = ExprSpecies.Species "B2"
 
 // Convert ExprSpecies to Species
 let exprSpeciesToSpecies =
@@ -82,18 +83,33 @@ let injectWhenCmp =
     List.collect (fun com ->
         match com with
         | CommandS.Module(ModuleS.Cmp(_, _)) ->
+            // Approximated majority for X
             [ createReaction
                   [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies XltY ]
-                  [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies B ]
+                  [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies B1 ]
               createReaction
-                  [ exprSpeciesToSpecies B; exprSpeciesToSpecies XltY ]
+                  [ exprSpeciesToSpecies B1; exprSpeciesToSpecies XltY ]
                   [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies XltY ]
               createReaction
                   [ exprSpeciesToSpecies XltY; exprSpeciesToSpecies XgtY ]
-                  [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies B ]
+                  [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies B1 ]
               createReaction
-                  [ exprSpeciesToSpecies B; exprSpeciesToSpecies XgtY ]
-                  [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies XgtY ] ]
+                  [ exprSpeciesToSpecies B1; exprSpeciesToSpecies XgtY ]
+                  [ exprSpeciesToSpecies XgtY; exprSpeciesToSpecies XgtY ]
+
+              // Approximated majority for Y
+              createReaction
+                  [ exprSpeciesToSpecies YgtX; exprSpeciesToSpecies YltX ]
+                  [ exprSpeciesToSpecies YltX; exprSpeciesToSpecies B2 ]
+              createReaction
+                  [ exprSpeciesToSpecies B2; exprSpeciesToSpecies YltX ]
+                  [ exprSpeciesToSpecies YltX; exprSpeciesToSpecies YltX ]
+              createReaction
+                  [ exprSpeciesToSpecies YltX; exprSpeciesToSpecies YgtX ]
+                  [ exprSpeciesToSpecies YgtX; exprSpeciesToSpecies B2 ]
+              createReaction
+                  [ exprSpeciesToSpecies B2; exprSpeciesToSpecies YgtX ]
+                  [ exprSpeciesToSpecies YgtX; exprSpeciesToSpecies YgtX ] ]
         | _ -> [])
 
 // Compiles a single command to a list of reactions
@@ -187,7 +203,7 @@ let compileCrnS (ast: TypedAST) =
     let cspec = step |> List.length |> createClockSpecies
     let oscillator = createOscillator (cspec |> List.length) cspec.[0] cspec
 
-    let env = intialEnv (snd ast) cspec [ H; B ] conc
+    let env = intialEnv (snd ast) cspec [ H; B1; B2 ] conc
 
     let rxn =
         step
