@@ -86,16 +86,6 @@ let compileModule (mods: ModuleS) =
               [ exprSpeciesToSpecies YgtX; exprSpeciesToSpecies CmpOff ]
           createReaction [ exprSpeciesToSpecies YltX; y ] [ exprSpeciesToSpecies YgtX; y ] ]
 
-(* 
-        rxn[XgtyFlag + y, XltyFlag + y, 1],
-            rxn[XltyFlag + ComparisonOffset, XgtyFlag + ComparisonOffset, 1],
-            rxn[XltyFlag + x, XgtyFlag + x, 1],
-            
-            rxn[YgtxFlag + x, YltxFlag + x, 1],
-            rxn[YltxFlag + ComparisonOffset, YgtxFlag + ComparisonOffset, 1],
-            rxn[YltxFlag + y, YgtxFlag + y, 1]
-            *)
-
 // Inject the approximated majority gate when a comparison is made
 let injectWhenCmp =
     List.collect (fun com ->
