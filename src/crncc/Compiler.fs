@@ -160,15 +160,26 @@ let intialEnv typeEnv clocksp flag constmap conc : Env =
         conc
 
 // Create the oscillator for the clock species
-let rec oscillator n firstspec spec =
-    match spec with
-    | c1 :: c2 :: spec' ->
-        [ rxn [ species c1; species c2 ] [ species c2; species c2 ] ]
-        :: oscillator (n - 1) firstspec (c2 :: spec')
-    | c :: spec' ->
-        [ rxn [ species c; species firstspec ] [ species firstspec; species firstspec ] ]
-        :: oscillator (n - 1) firstspec spec'
-    | [] -> []
+[<TailCall>]
+let oscillator n firstspec spec =
+    let rec oscillatorInner n firstspec spec acc =
+        match spec with
+        | c1 :: c2 :: spec' ->
+            oscillatorInner
+                (n - 1)
+                firstspec
+                (c2 :: spec')
+                ([ rxn [ species c1; species c2 ] [ species c2; species c2 ] ] :: acc)
+        | c :: spec' ->
+            oscillatorInner
+                (n - 1)
+                firstspec
+                spec'
+                ([ rxn [ species c; species firstspec ] [ species firstspec; species firstspec ] ]
+                 :: acc)
+        | [] -> List.rev acc
+
+    oscillatorInner n firstspec spec []
 
 // c a CRN to a list of reactions
 let compile (constmap: Env) (ast: TypedAST) =
