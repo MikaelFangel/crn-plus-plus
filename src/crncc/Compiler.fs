@@ -5,23 +5,23 @@ open CRN.AST
 type Env = Map<string, float>
 
 // Flag species
-let XgtY = ExprSpecies.Species "_XgtY"
-let XltY = ExprSpecies.Species "_XltY"
-let YgtX = ExprSpecies.Species "_YgtX"
-let YltX = ExprSpecies.Species "_YltX"
-let H = ExprSpecies.Species "_H"
-let B1 = ExprSpecies.Species "_B1"
-let B2 = ExprSpecies.Species "_B2"
-let CmpOff = ExprSpecies.Species "_CmpOff"
+let private XgtY = ExprSpecies.Species "_XgtY"
+let private XltY = ExprSpecies.Species "_XltY"
+let private YgtX = ExprSpecies.Species "_YgtX"
+let private YltX = ExprSpecies.Species "_YltX"
+let private H = ExprSpecies.Species "_H"
+let private B1 = ExprSpecies.Species "_B1"
+let private B2 = ExprSpecies.Species "_B2"
+let private CmpOff = ExprSpecies.Species "_CmpOff"
 
 // Convert ExprSpecies to Species
-let species =
+let private species =
     function
     | ExprSpecies.Species(s) -> s
 
 // Create clock species by given the number of steps
 [<TailCall>]
-let clockSpecies nstep =
+let private clockSpecies nstep =
     let n = nstep * 3
 
     let rec clockSpeciesInner acc =
@@ -32,21 +32,21 @@ let clockSpecies nstep =
     clockSpeciesInner [] n
 
 // Add a list of species to a side of an reaction
-let specToExpr (spec: ExprSpecies list) (side: ExprS) =
+let private specToExpr (spec: ExprSpecies list) (side: ExprS) =
     match side with
     | ExprS.Expr(e) -> ExprS.Expr(spec @ e)
 
 // Add a list species to a reaction
-let addSpecToRxn (spec: ExprSpecies list) (rxn: ReactionS) =
+let private addSpecToRxn (spec: ExprSpecies list) (rxn: ReactionS) =
     match rxn with
     | ReactionS.Reaction(lhs, rhs, rate) -> ReactionS.Reaction(specToExpr spec lhs, specToExpr spec rhs, rate)
 
 // Add a list species to a step
-let addSpecToStep (spec: ExprSpecies) (step: ReactionS list) =
+let private addSpecToStep (spec: ExprSpecies) (step: ReactionS list) =
     List.map (fun rxn -> addSpecToRxn [ spec ] rxn) step
 
 // Create a reaction with a given rate
-let rxnWRate (rate: float) (lhs: SpeciesS list) (rhs: SpeciesS list) =
+let private rxnWRate (rate: float) (lhs: SpeciesS list) (rhs: SpeciesS list) =
     ReactionS.Reaction(
         lhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr,
         rhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr,
@@ -54,10 +54,10 @@ let rxnWRate (rate: float) (lhs: SpeciesS list) (rhs: SpeciesS list) =
     )
 
 // Create a reaction with rate default rate of 1.0
-let rxn = rxnWRate 1.0
+let private rxn = rxnWRate 1.0
 
-// c a module to a list of reactions
-let cModule (mods: ModuleS) =
+// Compile a module to a list of reactions
+let private cModule (mods: ModuleS) =
     match mods with
     | ModuleS.Ld(a, b) -> [ rxn [ a ] [ a; b ]; rxn [ b ] [] ]
     | ModuleS.Add(a, b, c) -> [ rxn [ a ] [ a; c ]; rxn [ b ] [ b; c ]; rxn [ c ] [] ]
@@ -79,7 +79,7 @@ let cModule (mods: ModuleS) =
           rxn [ species YltX; y ] [ species YgtX; y ] ]
 
 // Inject the approximated majority gate when a comparison is made
-let am =
+let private am =
     List.collect (fun com ->
         match com with
         | CommandS.Module(ModuleS.Cmp(_, _)) ->
@@ -96,8 +96,8 @@ let am =
               rxn [ species B2; species YgtX ] [ species YgtX; species YgtX ] ]
         | _ -> [])
 
-// cs a single command to a list of reactions
-let rec cCommand (com: CommandS) =
+// Compiles a single command to a list of reactions
+let rec private cCommand (com: CommandS) =
     match com with
     | CommandS.Module(m) -> cModule m
     | CommandS.Reaction(r) -> [ r ]
@@ -121,8 +121,8 @@ and cCondition (cond: ConditionS) =
         List.collect (fun c -> cCommand c) cmd
         |> List.map (fun r -> addSpecToRxn [ YgtX ] r)
 
-// c the root of the AST to a list of reactions
-let cRootS (conc, step) (root: RootS) =
+// Compile the root of the AST to a list of reactions
+let private cRootS (conc, step) (root: RootS) =
     match root with
     | RootS.Conc(c) -> (c :: conc, step)
     | RootS.Step(s) ->
@@ -131,7 +131,7 @@ let cRootS (conc, step) (root: RootS) =
          |> List.filter (fun e -> e <> []))
 
 // Initialized the environment with the initial values
-let intialEnv typeEnv clocksp flag constmap conc : Env =
+let private intialEnv typeEnv clocksp flag constmap conc : Env =
     let emptyState =
         typeEnv.Species
         |> Seq.append (flag |> List.map (fun s -> s |> string))
@@ -161,7 +161,7 @@ let intialEnv typeEnv clocksp flag constmap conc : Env =
 
 // Create the oscillator for the clock species
 [<TailCall>]
-let oscillator n firstspec spec =
+let private oscillator n firstspec spec =
     let rec oscillatorInner n firstspec spec acc =
         match spec with
         | c1 :: c2 :: spec' ->
@@ -181,7 +181,7 @@ let oscillator n firstspec spec =
 
     oscillatorInner n firstspec spec []
 
-// c a CRN to a list of reactions
+// Coompile a CRN to a list of reactions
 let compile (constmap: Env) (ast: TypedAST) =
     let (conc, step) =
         match ast |> fst with
