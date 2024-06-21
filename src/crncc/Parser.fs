@@ -3,33 +3,53 @@ module CRN.Parser
 open CRN.AST
 open FParsec
 
-// Doesn't work right now
-let private comment =
-    let anythingExceptNewline = isNoneOf [ '\n'; '\r' ]
-    skipString "//" >>. spaces >>. manySatisfy anythingExceptNewline
-
-let private ws = comment |>> ignore <|> spaces
+let private ws = spaces
 let private str_ws s = pstring s .>> ws
+let private str_wso s = pstring s .>> pchar ' '
 
 let private float_ws = pfloat .>> ws
 
+let private reservedNames = 
+    choice [
+        str_wso "conc"
+        str_wso "ld"
+        str_wso "add"
+        str_wso "sub"
+        str_wso "mul"
+        str_wso "div"
+        str_wso "sqrt"
+        str_wso "cmp"
+        str_wso "ifEQ"
+        str_wso "ifGT"
+        str_wso "ifLT"
+        str_wso "ifGE"
+        str_wso "ifLE"
+        str_wso "step"
+        str_wso "crn"
+    ]
+
 let private identifier =
-    let isFirstChar c = isLetter c || c = '_'
+    let isFirstChar c = isLetter c
     let isChar c = isLetter c || isDigit c || c = '_'
-    many1Satisfy2L isFirstChar isChar "identifier" .>> ws
+    (notFollowedByL reservedNames "Unexpected reserved keyword") >>. many1Satisfy2L isFirstChar isChar "identifier" .>> ws
+
+let private identifierOrReserved =
+    let isFirstChar c = isLetter c || (c = '_')
+    let isChar c = isLetter c || isDigit c || c = '_'
+    (notFollowedBy reservedNames) >>. many1Satisfy2L isFirstChar isChar "identifier" .>> ws
 
 let private pspecies = identifier |>> SpeciesS
+let private pspeciesRes = identifierOrReserved |>> SpeciesS
+
 let private pconst = identifier
 
 let private pnumber = float_ws
 
-let private SpeciesOrNull input =
-    match input with
-    | str -> ExprSpecies.Species str
+let private pspecies2 = identifier |>> ExprSpecies.Species
+let private pspecies2Reserved = identifierOrReserved |>> ExprSpecies.Species
 
-let private pspeciesnullable = identifier |>> SpeciesOrNull
-
-let private pexpr = sepBy pspeciesnullable (str_ws "+") |>> ExprS.Expr
+let private pexpr = sepBy pspecies2 (str_ws "+") |>> ExprS.Expr
+let private pexprReserved = sepBy pspecies2Reserved (str_ws "+") |>> ExprS.Expr
 
 let private start_bracket bcopen start = str_ws start .>> str_ws bcopen
 
@@ -47,6 +67,9 @@ let pvalue = choice [ pconst |>> ValueS.Literal; pnumber |>> ValueS.Number ]
 
 let private pconc =
     brackets2 (start_bracket "[" "conc") (end_bracket "]") pspecies pvalue ConcS.Conc
+
+let private pconcReserved =
+    brackets2 (start_bracket "[" "conc") (end_bracket "]") pspeciesRes pvalue ConcS.Conc
 
 let private brackets3species name =
     brackets3 (start_bracket "[" name) (end_bracket "]") pspecies pspecies pspecies
@@ -74,6 +97,10 @@ let private pmodule =
 
 let private prxn =
     brackets3 (start_bracket "[" "rxn") (end_bracket "]") pexpr pexpr pnumber ReactionS.Reaction
+let private prxnReserved =
+    brackets3 (start_bracket "[" "rxn") (end_bracket "]") pexprReserved pexprReserved pnumber ReactionS.Reaction
+
+
 
 let private listparser popen pclose listelem =
     between popen pclose (sepBy listelem (str_ws ","))
@@ -119,14 +146,14 @@ let tryParse (str) : Result<UntypedAST, _> =
     | Failure(errorMsg, _, _) -> Result.Error [ errorMsg ]
 
 module RXN =
-    let private rxncommand = prxn |>> CommandS.Reaction
+    let private rxncommand = prxnReserved |>> CommandS.Reaction
 
     let private pcommandlist start =
         listparser (commandopen start) commandclose rxncommand
 
     let private pstep = pcommandlist "step"
 
-    let private proot = choice [ pstep |>> RootS.Step; pconc |>> RootS.Conc ]
+    let private proot = choice [ pstep |>> RootS.Step; pconcReserved |>> RootS.Conc ]
 
     let private pcrnrxn = ws >>. curlyparser proot .>> eof |>> CrnS.Crn
     /// Try and parse the text into an untyped AST but restrict to only
