@@ -69,8 +69,7 @@ let private odeof current lhs rhs speed : OdeEq =
             |> List.map getname
             |> List.map (
                 fun spec -> 
-                let v = Map.find spec Os
-                v
+                Map.find spec Os
                 )
             |> List.fold (fun acc v -> acc * v) 1.0
 
@@ -105,12 +104,7 @@ let private forwardEuler system state time =
 /// Solve a given ODE based on an initial state and step size
 let solveODE (initial: Map<string, float>) step reactions =
     let ode = createODE reactions
-    let givenkeys = initial.Keys
-    let requiredkeys = ode.Eqs.Keys
-    let missing = Set.difference (Set.ofSeq requiredkeys) (Set.ofSeq givenkeys)
-    if missing.Count <> 0 then
-        printfn "Missing elements: %A" missing
-    
+
     let missing = Set.difference (Set ode.Eqs.Keys) (Set initial.Keys)
     if missing.Count <> 0 then
         raise (System.ArgumentException($"Missing elements: %A{missing}"))
@@ -126,3 +120,110 @@ let solveODE (initial: Map<string, float>) step reactions =
         let newstate = forwardEuler ode state step
         Some(newstate, newstate))
     |> Seq.append (Seq.singleton initial)
+
+
+/// arr: species
+/// rxnmask: species
+let inline private applyrxn (speciesnum: int) (arr: float array) (rxnmask: int array): float =
+    let mutable ret = 0.0
+    for i in 0..speciesnum do
+        if rxnmask[i] > 0 then
+            ret <- ret + pown arr[i] rxnmask[i]
+    ret
+
+
+let inline private composerxns (reactionnum: int) (rxnresults: float array) (eqmask: float array): float =
+    let mutable ret = 0.0
+    for i in 0..reactionnum-1 do
+        ret <- ret + rxnresults[i] * eqmask[i]
+    ret
+
+///   spec x rxns
+/// input: 1 x spec
+/// rxnarrays: rxns x spec (as many arrays as reactions, array length of species)
+/// eqmasks: spec x rxns (as many arrays as species)
+let inline private differences (input: float array) 
+                       (rxnmasks: int array array) 
+                       (eqmasks: float array array): float array =
+    let species = rxnmasks.Length
+    let rxns = eqmasks.Length
+    let output = Array.zeroCreate input.Length
+
+    let inter = Array.zeroCreate species
+    for j in 0..rxns do
+        for i in 0..species do 
+            inter[i] <- applyrxn rxns input rxnmasks[i]
+        output[j] <- composerxns species inter eqmasks[j]
+    output
+        
+let inline private eulerFast input rxnmasks eqmasks time =
+    let diff = differences input rxnmasks eqmasks
+    for i in 0..input.Length-1 do
+        diff[i] <- max (diff[i] * time + input[i]) 0.0
+    diff
+
+type rxnmask_t = int array array
+type eqmask_t = float array array
+
+// species length
+let private createRXNmask (namelist: string list) (reaction: ReactionS): int array =
+    let lhs = getlhs reaction
+    namelist
+    |> List.map (fun name -> count name lhs)
+    |> List.toArray
+
+// number of equations
+let private createEQmask (rxns: ReactionS list) (name: string): float array =
+    let oneeq name rxn =
+        let (lhs, rhs, speed) = getlhs rxn, getrhs rxn, getspeed rxn
+        let change = getchange lhs rhs name
+        float change * speed
+    rxns
+    |> List.map (oneeq name)
+    |> List.toArray
+
+let private createODE2 reactions: (string list * rxnmask_t * eqmask_t) =
+    let species = 
+        List.map getspecies reactions
+        |> List.fold Set.union Set.empty
+        |> Set.toList
+    let namelist = List.map string species
+
+    let rxnmasks = 
+        reactions
+        |> List.map (createRXNmask namelist) 
+        |> List.toArray 
+
+    let eqmasks =
+        namelist 
+        |> List.map (createEQmask reactions)
+        |> List.toArray
+
+    namelist, rxnmasks, eqmasks 
+
+let solveODEFast (initial: Map<string, float>) 
+                 (step: float) 
+                 (reactions: ReactionS list): string list * float array seq =
+    
+    let (namelist, rxnmasks, eqmasks) = createODE2 reactions
+
+    let missing = Set.difference (Set namelist) (Set initial.Keys)
+    if missing.Count <> 0 then
+        raise (System.ArgumentException($"Missing elements: %A{missing}"))
+
+    let unnecessary = Set.difference (Set initial.Keys) (Set namelist)
+    if unnecessary.Count <> 0 then
+        eprintfn $"ODE Solver: Unnecessary arguments dropped: %A{unnecessary}"
+
+    let initial = 
+        namelist
+        |> List.map (fun elem -> Map.find elem initial)
+        |> List.toArray
+    
+    let sequence = 
+        initial
+        |> Seq.unfold (fun state ->
+            let newstate = eulerFast state rxnmasks eqmasks step
+            Some(newstate, newstate))
+
+    namelist, sequence
