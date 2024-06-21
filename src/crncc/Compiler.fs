@@ -5,13 +5,13 @@ open CRN.AST
 type Env = Map<string, float>
 
 // Flag species
-let XgtY = ExprSpecies.Species "XgtY"
-let XltY = ExprSpecies.Species "XltY"
-let YgtX = ExprSpecies.Species "YgtX"
-let YltX = ExprSpecies.Species "YltX"
-let H = ExprSpecies.Species "H"
-let B = ExprSpecies.Species "B"
-let CmpOff = ExprSpecies.Species "CmpOff"
+let XgtY = ExprSpecies.Species "_XgtY"
+let XltY = ExprSpecies.Species "_XltY"
+let YgtX = ExprSpecies.Species "_YgtX"
+let YltX = ExprSpecies.Species "_YltX"
+let H = ExprSpecies.Species "_H"
+let B = ExprSpecies.Species "_B"
+let CmpOff = ExprSpecies.Species "_CmpOff"
 
 // Convert ExprSpecies to Species
 let species =
@@ -26,7 +26,7 @@ let clockSpecies nstep =
     let rec clockSpeciesInner acc =
         function
         | 0 -> acc
-        | n -> clockSpeciesInner (ExprSpecies.Species $"X_{n}" :: acc) (n - 1)
+        | n -> clockSpeciesInner (ExprSpecies.Species $"_X{n}" :: acc) (n - 1)
 
     clockSpeciesInner [] n
 
@@ -143,7 +143,7 @@ let intialEnv typeEnv clocksp flag conc : Env =
 
     let emptyState =
         List.fold (fun map c -> Map.add (string c) 0.0001 map) emptyState clocksp
-        |> Map.add ("X_3") (1.0 - (float (List.length clocksp) * 0.0001))
+        |> Map.add ("_X3") (1.0 - (float (List.length clocksp) * 0.0001))
 
     List.fold
         (fun map c ->
