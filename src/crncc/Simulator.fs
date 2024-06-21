@@ -124,17 +124,17 @@ let solveODE (initial: Map<string, float>) step reactions =
 
 /// arr: species
 /// rxnmask: species
-let inline private applyrxn (speciesnum: int) (arr: float array) (rxnmask: int array): float =
+let inline private applyrxn (arr: float array) (rxnmask: int array): float =
     let mutable ret = 0.0
-    for i in 0..speciesnum do
+    for i in 0..arr.Length-1 do
         if rxnmask[i] > 0 then
             ret <- ret + pown arr[i] rxnmask[i]
     ret
 
 
-let inline private composerxns (reactionnum: int) (rxnresults: float array) (eqmask: float array): float =
+let inline private composerxns (rxnresults: float array) (eqmask: float array): float =
     let mutable ret = 0.0
-    for i in 0..reactionnum-1 do
+    for i in 0..rxnresults.Length-1 do
         ret <- ret + rxnresults[i] * eqmask[i]
     ret
 
@@ -150,10 +150,10 @@ let inline private differences (input: float array)
     let output = Array.zeroCreate input.Length
 
     let inter = Array.zeroCreate species
-    for j in 0..rxns do
-        for i in 0..species do 
-            inter[i] <- applyrxn rxns input rxnmasks[i]
-        output[j] <- composerxns species inter eqmasks[j]
+    for j in 0..rxns-1 do
+        for i in 0..species-1 do 
+            inter[i] <- applyrxn input rxnmasks[i]
+        output[j] <- composerxns inter eqmasks[j]
     output
         
 let inline private eulerFast input rxnmasks eqmasks time =
