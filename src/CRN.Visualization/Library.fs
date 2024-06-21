@@ -9,11 +9,7 @@ type Dimension = float * float
 // Converts a state to a list of points for a given species
 let private convertState limit (state: State seq) species =
     let points =
-        state
-        |> Seq.take limit
-        |> Seq.indexed
-        |> Seq.map (fun (i, s) -> (i, s.[species]))
-        |> Seq.toList
+        state |> Seq.take limit |> Seq.mapi (fun i s -> (i, s.[species])) |> Seq.toList
 
     (species, points)
 
