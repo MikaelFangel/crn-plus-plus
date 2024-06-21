@@ -5,14 +5,14 @@ open CRN.AST
 type Env = Map<string, float>
 
 // Flag species
-let XgtY = ExprSpecies.Species "_XgtY"
-let XltY = ExprSpecies.Species "_XltY"
-let YgtX = ExprSpecies.Species "_YgtX"
-let YltX = ExprSpecies.Species "_YltX"
-let H = ExprSpecies.Species "_H"
-let B1 = ExprSpecies.Species "_B1"
-let B2 = ExprSpecies.Species "_B2"
-let CmpOff = ExprSpecies.Species "_CmpOff"
+let private XgtY = ExprSpecies.Species "_XgtY"
+let private XltY = ExprSpecies.Species "_XltY"
+let private YgtX = ExprSpecies.Species "_YgtX"
+let private YltX = ExprSpecies.Species "_YltX"
+let private H = ExprSpecies.Species "_H"
+let private B1 = ExprSpecies.Species "_B1"
+let private B2 = ExprSpecies.Species "_B2"
+let private CmpOff = ExprSpecies.Species "_CmpOff"
 
 // Convert ExprSpecies to Species
 let private species =
