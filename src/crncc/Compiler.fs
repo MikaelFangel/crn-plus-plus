@@ -131,11 +131,11 @@ let cRootS (conc, step) (root: RootS) =
          |> List.filter (fun e -> e <> []))
 
 // Initialized the environment with the initial values
-let intialEnv typeEnv clocksp flag conc : Env =
+let intialEnv typeEnv clocksp flag constmap conc : Env =
     let emptyState =
         typeEnv.Species
         |> Seq.append (flag |> List.map (fun s -> s |> string))
-        |> Seq.fold (fun acc s -> Map.add s 0.0 acc) Map.empty
+        |> Seq.fold (fun acc s -> Map.add s 0.0 acc) constmap
         |> Map.add (string XgtY) 0.50
         |> Map.add (string XltY) 0.50
         |> Map.add (string YgtX) 0.50
@@ -153,7 +153,8 @@ let intialEnv typeEnv clocksp flag conc : Env =
                 Map.add
                     s
                     (match v with
-                     | ValueS.Number(v) -> v)
+                     | ValueS.Number(v) -> v
+                     | ValueS.Literal(v) -> constmap |> Map.find v)
                     map)
         emptyState
         conc
@@ -170,7 +171,7 @@ let rec oscillator n firstspec spec =
     | [] -> []
 
 // c a CRN to a list of reactions
-let compile (ast: TypedAST) =
+let compile (constmap: Env) (ast: TypedAST) =
     let (conc, step) =
         match ast |> fst with
         | CrnS.Crn(rootlist) -> rootlist |> List.map (fun r -> cRootS ([], []) r) |> List.unzip
@@ -179,7 +180,7 @@ let compile (ast: TypedAST) =
     let spec = step |> List.length |> clockSpecies
     let oscillator = oscillator (spec |> List.length) spec.[0] spec
 
-    let env = intialEnv (snd ast) spec [ H; B1; B2 ] conc
+    let env = intialEnv (snd ast) spec [ H; B1; B2 ] constmap conc
 
     let rxn =
         step
