@@ -143,8 +143,8 @@ let intialEnv typeEnv clocksp flag conc : Env =
         |> Map.add (string CmpOff) 0.50
 
     let emptyState =
-        List.fold (fun map c -> Map.add (string c) 0.0001 map) emptyState clocksp
-        |> Map.add ("_X3") (1.0 - (float (List.length clocksp) * 0.0001))
+        List.fold (fun map c -> Map.add (string c) 0.1e-11 map) emptyState clocksp
+        |> Map.add ("_X3") (1.0 - (float (List.length clocksp) * 0.1e-11))
 
     List.fold
         (fun map c ->
