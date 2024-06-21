@@ -16,6 +16,8 @@
     <Compile Include="Typechecker.fs" />
     <Compile Include="Program.fs" />
     <Compile Include="Interpreter.fs" />
+    <Complie Include="Simulator.fs"/>
+    <Compile Include="Compiler.fs"/>
   </ItemGroup>
 
   <ItemGroup>
