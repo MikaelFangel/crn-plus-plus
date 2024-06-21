@@ -10,7 +10,8 @@ let XltY = ExprSpecies.Species "_XltY"
 let YgtX = ExprSpecies.Species "_YgtX"
 let YltX = ExprSpecies.Species "_YltX"
 let H = ExprSpecies.Species "_H"
-let B = ExprSpecies.Species "_B"
+let B1 = ExprSpecies.Species "_B1"
+let B2 = ExprSpecies.Species "_B2"
 let CmpOff = ExprSpecies.Species "_CmpOff"
 
 // Convert ExprSpecies to Species
@@ -83,16 +84,16 @@ let am =
         match com with
         | CommandS.Module(ModuleS.Cmp(_, _)) ->
             // Approximated majority for X
-            [ rxn [ species XgtY; species XltY ] [ species XltY; species B ]
-              rxn [ species B; species XltY ] [ species XltY; species XltY ]
-              rxn [ species XltY; species XgtY ] [ species XgtY; species B ]
-              rxn [ species B; species XgtY ] [ species XgtY; species XgtY ]
+            [ rxn [ species XgtY; species XltY ] [ species XltY; species B1 ]
+              rxn [ species B1; species XltY ] [ species XltY; species XltY ]
+              rxn [ species XltY; species XgtY ] [ species XgtY; species B1 ]
+              rxn [ species B1; species XgtY ] [ species XgtY; species XgtY ]
 
               // Approximated majority for Y
-              rxn [ species YgtX; species YltX ] [ species YltX; species B ]
-              rxn [ species B; species YltX ] [ species YltX; species YltX ]
-              rxn [ species YltX; species YgtX ] [ species YgtX; species B ]
-              rxn [ species B; species YgtX ] [ species YgtX; species YgtX ] ]
+              rxn [ species YgtX; species YltX ] [ species YltX; species B2 ]
+              rxn [ species B2; species YltX ] [ species YltX; species YltX ]
+              rxn [ species YltX; species YgtX ] [ species YgtX; species B2 ]
+              rxn [ species B2; species YgtX ] [ species YgtX; species YgtX ] ]
         | _ -> [])
 
 // cs a single command to a list of reactions
@@ -178,7 +179,7 @@ let compile (ast: TypedAST) =
     let spec = step |> List.length |> clockSpecies
     let oscillator = oscillator (spec |> List.length) spec.[0] spec
 
-    let env = intialEnv (snd ast) spec [ H; B ] conc
+    let env = intialEnv (snd ast) spec [ H; B1; B2 ] conc
 
     let rxn =
         step
