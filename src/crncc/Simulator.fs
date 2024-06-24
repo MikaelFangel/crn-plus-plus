@@ -212,62 +212,6 @@ module private Imperative =
 
         diff
 
-/// Alternative imperative implementation of the ODE Solver
-/// This preallocates two arrays reducing the number of allocations, but is otherwise
-/// much uglier than the previous one
-module private Imperative2 =
-
-    type internal ODE2 =
-        { RxnMasks: rxnmask_t
-          EqMasks: eqmask_t
-          Inter: float array
-          Output: float array }
-
-        static member Build rxnmasks eqmasks initial =
-            { RxnMasks = rxnmasks
-              EqMasks = eqmasks
-              Inter = Array.zeroCreate rxnmasks.Length
-              Output = initial }
-
-        member inline private self.composerxn(subarr: int) =
-            let mutable ret = 0.0
-
-            for i in 0 .. self.Inter.Length - 1 do
-                ret <- ret + self.Inter[i] * self.EqMasks.[subarr].[i]
-
-            ret
-
-        member inline private self.applyrxn (input: float array) (subarr: int) =
-            let mutable ret = 1.0
-
-            for i in 0 .. input.Length - 1 do
-                if self.RxnMasks[subarr][i] > 0 then
-                    ret <- ret * pown input[i] self.RxnMasks.[subarr].[i]
-
-            ret
-
-        member private self.differences(input: float array) =
-            let species = self.RxnMasks.Length
-            let rxns = self.EqMasks.Length
-            self.Output.Initialize()
-            self.Inter.Initialize()
-
-            for i in 0 .. species - 1 do
-                self.Inter[i] <- self.applyrxn input i
-
-            for j in 0 .. rxns - 1 do
-                self.Output[j] <- self.composerxn j
-
-            self.Output
-
-        member self.forwardEuler (input: float array) time =
-            let diff = self.differences input
-
-            for i in 0 .. input.Length - 1 do
-                diff[i] <- (diff[i] * time + input[i])
-
-            diff
-
 // Common functions for Functional2, Imperative, Imperative2 solvers
 
 let private createRXNmask (namelist: string list) (reaction: ReactionS) : int array =
@@ -356,33 +300,6 @@ let solveODEFunctional
             let newstate = Functional2.forwardEuler state rxnmasks eqmasks step
             Some(newstate, newstate))
         |> Seq.append (Seq.singleton initial)
-
-    namelist, sequence
-
-/// Solve a given ODE based on an initial state and step size
-/// Use the alternative imperative solver
-let solveODEFast2
-    (initial: Map<string, float>)
-    (step: float)
-    (reactions: ReactionS list)
-    : string list * float array seq =
-
-    let (namelist, rxnmasks, eqmasks) = createODE2 reactions
-
-    let _ = checkInputs namelist initial
-
-    let initial =
-        namelist |> List.map (fun elem -> Map.find elem initial) |> List.toArray
-
-    let mutable ode2 = Imperative2.ODE2.Build rxnmasks eqmasks initial
-
-    let sequence =
-        Seq.unfold
-            (fun (ode: Imperative2.ODE2) ->
-                let result = ode.forwardEuler ode.Output step
-                Some(result, ode))
-            ode2
-
 
     namelist, sequence
 

@@ -97,12 +97,12 @@ type SimulatorBenchmarking() =
 
     let time = 0.01
 
-    let elements = 5000
+    let elements = 50000
 
     [<Params(1, 2, 3)>]
     member val Complexity = 0 with get, set
 
-    [<GlobalSetup(Targets = [|"SolveODEOriginal"; "SolveODEFunctional"; "SolveODEImperative1"; "SolveODEImperative2"|])>]
+    [<GlobalSetup(Targets = [|"SolveODEOriginal"; "SolveODEFunctional"; "SolveODEImperative"|])>]
     member self.setupSystem() = system <- Some(buildSystem self.Complexity)
 
     [<Benchmark>]
@@ -119,15 +119,8 @@ type SimulatorBenchmarking() =
 
 
     [<Benchmark>]
-    member _.SolveODEImperative1() =
+    member _.SolveODEImperative() =
         match system with
         | Some (initial, reaction) -> solveODEFast initial time reaction |> snd |> Seq.take elements |> Seq.toList |> ignore
-        | None -> failwith "No ODE to benchmark."
-
-
-    [<Benchmark>]
-    member _.SolveODEImperative2() =
-        match system with
-        | Some (initial, reaction) -> solveODEFast2 initial time reaction |> snd |> Seq.take elements |> Seq.toList |> ignore
         | None -> failwith "No ODE to benchmark."
 
