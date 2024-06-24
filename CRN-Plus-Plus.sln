@@ -13,6 +13,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "crncc_test", "test\crncc_te
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CRN.Visualization", "src\CRN.Visualization\CRN.Visualization.fsproj", "{5FC6E4A7-54A3-4032-97B7-3686C3F695B5}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "benchmark", "test\benchmark\benchmark.fsproj", "{37107B85-8CDD-410E-9D98-0C2A6147FE54}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,10 +36,15 @@ Global
 		{5FC6E4A7-54A3-4032-97B7-3686C3F695B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5FC6E4A7-54A3-4032-97B7-3686C3F695B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5FC6E4A7-54A3-4032-97B7-3686C3F695B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37107B85-8CDD-410E-9D98-0C2A6147FE54}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37107B85-8CDD-410E-9D98-0C2A6147FE54}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37107B85-8CDD-410E-9D98-0C2A6147FE54}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37107B85-8CDD-410E-9D98-0C2A6147FE54}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{75CE199E-EB55-4ACF-8471-80221F27E5D4} = {EB2B5F05-AFDB-4255-8273-0158AA4053CF}
 		{E1155307-1AB3-4536-AFFB-F889E9BF2451} = {91A3B1C7-4F31-4588-A095-92619F99C1CB}
 		{5FC6E4A7-54A3-4032-97B7-3686C3F695B5} = {EB2B5F05-AFDB-4255-8273-0158AA4053CF}
+		{37107B85-8CDD-410E-9D98-0C2A6147FE54} = {91A3B1C7-4F31-4588-A095-92619F99C1CB}
 	EndGlobalSection
 EndGlobal
