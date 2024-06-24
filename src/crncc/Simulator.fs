@@ -114,7 +114,7 @@ module private Functional1 =
         |> Map.map (fun k current ->
             let eq = (system.Eqs.Item k)
             let diff = eq state
-            current + time * diff |> max 0.0)
+            current + time * diff)
 
 
 // Typedefs for the optimized versions
@@ -149,7 +149,7 @@ module private Functional2 =
         let diff = differences input rxnmasks eqmasks
 
         Array.zip input diff
-        |> Array.map (fun (cur, dif) -> (cur + dif * time) |> max 0.0)
+        |> Array.map (fun (cur, dif) -> (cur + dif * time))
 
 /// Imperative implementation of the ODE solver
 /// This implementation avoids most intermediate allocations and does all operations
@@ -208,7 +208,7 @@ module private Imperative =
         let diff = differences input rxnmasks eqmasks
 
         for i in 0 .. input.Length - 1 do
-            diff[i] <- max (diff[i] * time + input[i]) 0.0
+            diff[i] <- (diff[i] * time + input[i])
 
         diff
 
@@ -264,7 +264,7 @@ module private Imperative2 =
             let diff = self.differences input
 
             for i in 0 .. input.Length - 1 do
-                diff[i] <- max (diff[i] * time + input[i]) 0.0
+                diff[i] <- (diff[i] * time + input[i])
 
             diff
 
