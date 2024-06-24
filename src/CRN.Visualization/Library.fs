@@ -31,9 +31,7 @@ let plotStateWithSize f ((width, height): Dimension) limit (state: State seq) =
         |> List.map plotSpecies
         |> Chart.combine
         |> Chart.withSize (width, height)
-        |> Chart.withXAxis (
-            LinearAxis.init (Title = Title.init (Text = "Time"), RangeMode = StyleParam.RangeMode.ToZero)
-        )
+        |> Chart.withXAxis (LinearAxis.init (RangeMode = StyleParam.RangeMode.ToZero))
         |> Chart.withYAxis (
             LinearAxis.init (Title = Title.init (Text = "Concentration"), RangeMode = StyleParam.RangeMode.ToZero)
         )
