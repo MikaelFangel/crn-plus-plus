@@ -33,16 +33,53 @@ let clockreaction =
                  Species("A")]), 1.0
         )]
 
-let getTestFile name =
-    let path = System.IO.Path.Combine("../../../../../../../../../examples", name)
-    System.IO.File.ReadAllText path
+let filePi = "crn = {
+    conc[four, 4],
+    conc[divisor1, 1],
+    conc[divisor2, 3],
+    conc[pi, 0],
+    step[{
+        div[four, divisor1, factor1],
+        add[divisor1, four, divisor1Next],
+        div[four, divisor2, factor2],
+        add[divisor2, four, divisor2Next],
+        sub[factor1, factor2, factor],
+        add[pi, factor, piNext]
+    }],
+    step[{
+        ld[divisor1Next, divisor1],
+        ld[divisor2Next, divisor2],
+        ld[piNext, pi]
+    }]
+}"
 
-let getFile name =
+let fileSubAlt = "crn = {
+    conc[a, 15], conc[b, 6],
+    conc[one, 1], conc[zero, 0],
+    step[{
+        cmp[b, zero]
+    }],
+    step[{
+        ifGE[{
+            sub[a, one, anext],
+            sub[b, one, bnext]
+        }]
+    }],
+    step[{
+        ifGE[{
+            ld[anext, a],
+            ld[bnext, b]
+        }]
+    }]
+}"
+
+
+let getFile str =
     let result = 
-        getTestFile name 
+        str
         |> CRN.Parser.tryParse 
         |> Result.bind CRN.Typechecker.typecheck
-        |> Result.bind (fun res -> Ok (CRN.Compiler.compile (Map.ofList ["a0", 5; "b0", 3]) res))
+        |> Result.bind (fun res -> Ok (CRN.Compiler.compile (Map.empty) res))
     match result with
     Ok rex -> rex
     | Error _ -> failwith "Could not find file"
@@ -50,8 +87,8 @@ let getFile name =
 let buildSystem complexity =
     match complexity with
     | 1 -> clockinitial, clockreaction
-    | 2 -> getFile "pi.crn"
-    | 3 -> getFile "subalt.crn"
+    | 2 -> getFile filePi
+    | 3 -> getFile fileSubAlt
     | _ -> failwith "Unexpected input to buildSystem"
 
 type SimulatorBenchmarking() =
