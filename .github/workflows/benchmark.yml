@@ -20,6 +20,6 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build -c release --no-restore
+      run: dotnet build -c release --no-restore --output Release
     - name: Benchmark
-      run: dotnet run -c release --no-build --verbosity normal --project test/benchmark
+      run: ./Release/benchmark
