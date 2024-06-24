@@ -136,6 +136,9 @@ let private cRootS (conc, step) =
 let private initialEnv typeEnv clocksp flag constmap conc : Env =
     let flags = [ XgtY; XltY; YgtX; YltX; CmpOff ]
     let iv = 0.1e-11
+    let specv = (float (List.length clocksp) * iv) / 2.0
+    let chead = clocksp |> List.head |> string
+    let clast= clocksp |> List.rev |> List.head |> string
 
     let state =
         typeEnv.Species
@@ -143,7 +146,8 @@ let private initialEnv typeEnv clocksp flag constmap conc : Env =
         |> Seq.fold (fun acc s -> Map.add s 0.0 acc) constmap
         |> (fun map -> List.fold (fun acc k -> Map.add (string k) 0.5 acc) map flags)
         |> (fun map -> List.fold (fun acc c -> Map.add (string c) iv acc) map clocksp)
-        |> Map.add ("_X3") (1.0 - (float (List.length clocksp) * iv))
+        |> Map.add (chead) (0.5 - specv)
+        |> Map.add (clast) (0.5 - specv)
 
     List.fold
         (fun map c ->
