@@ -26,7 +26,7 @@ type ValueS =
     with override this.ToString() =
             match this with
             Literal(st) -> st
-            | Number(num) -> num.ToString()
+            | Number(num) -> $"%f{num}"
 
 [<RequireQualifiedAccess>]
 type ConcS = Conc of SpeciesS * ValueS
@@ -44,7 +44,7 @@ type ExprS = Expr of list<ExprSpecies>
 type ReactionS = Reaction of ExprS * ExprS * PNumberS
     with override this.ToString() =
             match this with
-                Reaction(expr1, expr2, num) -> $"rxn[{expr1}, {expr2}, {num}]"
+                Reaction(expr1, expr2, num) -> $"rxn[{expr1}, {expr2}, %f{num}]"
 
 [<RequireQualifiedAccess>]
 type ModuleS =
