@@ -3,7 +3,7 @@ RUN_CMD=dotnet run --project src/crnccrun/crnccrun.fsproj -- simulate
 .PHONY: example-euler example-gcd example-division example-counter example-factorial example-isqrt example-pi
 
 example-euler:
-	$(RUN_CMD) examples/euler.crn -p -s 600000 -n "e"
+	$(RUN_CMD) examples/euler.crn -p -s 60000 -n "e"
 
 example-gcd:
 	$(RUN_CMD) examples/gcd.crn -p -s 70000 -n "a;b" -i "a0=32;b0=12"
