@@ -35,16 +35,16 @@ type ConcS = Conc of SpeciesS * ValueS
                     Conc(species, value) -> $"conc[{species}, {value}]"
 
 [<RequireQualifiedAccess>]
-type ExprS = Expr of list<ExprSpecies>
-    with override this.ToString() =
-            match this with
-                Expr(lst) -> List.map string lst |> String.concat "+" 
+type ExprS = list<ExprSpecies>
 
 [<RequireQualifiedAccess>]
 type ReactionS = Reaction of ExprS * ExprS * PNumberS
     with override this.ToString() =
             match this with
-                Reaction(expr1, expr2, num) -> $"rxn[{expr1}, {expr2}, %f{num}]"
+                Reaction(expr1, expr2, num) -> 
+                    let lhs = List.map string expr1 |> String.concat "+" 
+                    let rhs = List.map string expr2 |> String.concat "+" 
+                    $"rxn[{lhs}, {rhs}, %f{num}]"
 
 [<RequireQualifiedAccess>]
 type ModuleS =

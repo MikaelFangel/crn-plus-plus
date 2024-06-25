@@ -34,7 +34,7 @@ let private clockSpecies nstep =
 // Add a list of species to a side of an reaction.
 let private specToExpr (spec: ExprSpecies list) =
     function
-    | ExprS.Expr(e) -> ExprS.Expr(spec @ e)
+    | e -> spec @ e
 
 // Add a list species to a reaction.
 let private addSpecToRxn (spec: ExprSpecies list) =
@@ -48,8 +48,8 @@ let private addSpecToStep (spec: ExprSpecies) (step: ReactionS list) =
 // Create a reaction with a given rate.
 let private rxnWRate (rate: float) (lhs: SpeciesS list) (rhs: SpeciesS list) =
     ReactionS.Reaction(
-        lhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr,
-        rhs |> List.map (fun e -> ExprSpecies.Species e) |> ExprS.Expr,
+        lhs |> List.map (fun e -> ExprSpecies.Species e),
+        rhs |> List.map (fun e -> ExprSpecies.Species e),
         rate
     )
 

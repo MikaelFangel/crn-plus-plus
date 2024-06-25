@@ -48,8 +48,8 @@ let private pnumber = float_ws
 let private pspecies2 = identifier |>> ExprSpecies.Species
 let private pspecies2Reserved = identifierOrReserved |>> ExprSpecies.Species
 
-let private pexpr = sepBy pspecies2 (str_ws "+") |>> ExprS.Expr
-let private pexprReserved = sepBy pspecies2Reserved (str_ws "+") |>> ExprS.Expr
+let private pexpr = sepBy pspecies2 (str_ws "+")
+let private pexprReserved = sepBy pspecies2Reserved (str_ws "+")
 
 let private start_bracket bcopen start = str_ws start .>> str_ws bcopen
 
