@@ -6,6 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Tree.fs" />
+    <Compile Include="Tikz.fs" />
     <Compile Include="Library.fs" />
   </ItemGroup>
 
