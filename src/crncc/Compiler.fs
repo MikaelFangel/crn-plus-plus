@@ -5,19 +5,14 @@ open CRN.AST
 type Env = Map<string, float>
 
 // Flag species.
-let private XgtY = ExprSpecies.Species "_XgtY"
-let private XltY = ExprSpecies.Species "_XltY"
-let private YgtX = ExprSpecies.Species "_YgtX"
-let private YltX = ExprSpecies.Species "_YltX"
-let private H = ExprSpecies.Species "_H"
-let private B1 = ExprSpecies.Species "_B1"
-let private B2 = ExprSpecies.Species "_B2"
-let private CmpOff = ExprSpecies.Species "_CmpOff"
-
-// Convert ExprSpecies to Species.
-let private species =
-    function
-    | ExprSpecies.Species(s) -> s
+let private XgtY: SpeciesS = "_XgtY"
+let private XltY: SpeciesS = "_XltY"
+let private YgtX: SpeciesS = "_YgtX"
+let private YltX: SpeciesS = "_YltX"
+let private H: SpeciesS = "_H"
+let private B1: SpeciesS = "_B1"
+let private B2: SpeciesS = "_B2"
+let private CmpOff: SpeciesS = "_CmpOff"
 
 // Create clock species by given the number of steps.
 [<TailCall>]
@@ -27,31 +22,26 @@ let private clockSpecies nstep =
     let rec clockSpeciesInner acc =
         function
         | 0 -> acc
-        | n -> clockSpeciesInner (ExprSpecies.Species $"_X{n}" :: acc) (n - 1)
+        | n -> clockSpeciesInner ($"_X{n}" :: acc) (n - 1)
 
     clockSpeciesInner [] n
 
 // Add a list of species to a side of an reaction.
-let private specToExpr (spec: ExprSpecies list) =
+let private specToExpr (spec: SpeciesS list) =
     function
     | e -> spec @ e
 
 // Add a list species to a reaction.
-let private addSpecToRxn (spec: ExprSpecies list) =
+let private addSpecToRxn (spec: SpeciesS list) =
     function
     | ReactionS.Reaction(lhs, rhs, rate) -> ReactionS.Reaction(specToExpr spec lhs, specToExpr spec rhs, rate)
 
 // Add a list species to the entire step.
-let private addSpecToStep (spec: ExprSpecies) (step: ReactionS list) =
+let private addSpecToStep (spec: SpeciesS) (step: ReactionS list) =
     List.map (fun rxn -> addSpecToRxn [ spec ] rxn) step
 
 // Create a reaction with a given rate.
-let private rxnWRate (rate: float) (lhs: SpeciesS list) (rhs: SpeciesS list) =
-    ReactionS.Reaction(
-        lhs |> List.map (fun e -> ExprSpecies.Species e),
-        rhs |> List.map (fun e -> ExprSpecies.Species e),
-        rate
-    )
+let private rxnWRate (rate: float) (lhs: SpeciesS list) (rhs: SpeciesS list) = ReactionS.Reaction(lhs, rhs, rate)
 
 // Create a reaction with rate default rate of 1.0.
 let private rxn = rxnWRate 1.0
@@ -61,24 +51,20 @@ let private cModule (mods: ModuleS) =
     match mods with
     | ModuleS.Ld(a, b) -> [ rxn [ a ] [ a; b ]; rxn [ b ] [] ]
     | ModuleS.Add(a, b, c) -> [ rxn [ a ] [ a; c ]; rxn [ b ] [ b; c ]; rxn [ c ] [] ]
-    | ModuleS.Sub(a, b, c) ->
-        [ rxn [ a ] [ a; c ]
-          rxn [ b ] [ b; species H ]
-          rxn [ c ] []
-          rxn [ c; species H ] [] ]
+    | ModuleS.Sub(a, b, c) -> [ rxn [ a ] [ a; c ]; rxn [ b ] [ b; H ]; rxn [ c ] []; rxn [ c; H ] [] ]
     | ModuleS.Mul(a, b, c) -> [ rxn [ a; b ] [ a; b; c ]; rxn [ c ] [] ]
     | ModuleS.Div(a, b, c) -> [ rxn [ a ] [ a; c ]; rxn [ b; c ] [ b ] ]
     | ModuleS.Sqrt(a, b) -> [ rxn [ a ] [ a; b ]; rxnWRate 0.5 [ b; b ] [] ]
     | ModuleS.Cmp(x, y) ->
         // Normalization for X
-        [ rxn [ species XgtY; y ] [ species XltY; y ]
-          rxn [ species XltY; species CmpOff ] [ species XgtY; species CmpOff ]
-          rxn [ species XltY; x ] [ species XgtY; x ]
+        [ rxn [ XgtY; y ] [ XltY; y ]
+          rxn [ XltY; CmpOff ] [ XgtY; CmpOff ]
+          rxn [ XltY; x ] [ XgtY; x ]
 
           // Normalization for Y
-          rxn [ species YgtX; x ] [ species YltX; x ]
-          rxn [ species YltX; species CmpOff ] [ species YgtX; species CmpOff ]
-          rxn [ species YltX; y ] [ species YgtX; y ] ]
+          rxn [ YgtX; x ] [ YltX; x ]
+          rxn [ YltX; CmpOff ] [ YgtX; CmpOff ]
+          rxn [ YltX; y ] [ YgtX; y ] ]
 
 // Inject the approximated majority when a comparison is made.
 let private am =
@@ -86,16 +72,16 @@ let private am =
         match com with
         | CommandS.Module(ModuleS.Cmp(_, _)) ->
             // Approximated majority for X.
-            [ rxn [ species XgtY; species XltY ] [ species XltY; species B1 ]
-              rxn [ species B1; species XltY ] [ species XltY; species XltY ]
-              rxn [ species XltY; species XgtY ] [ species XgtY; species B1 ]
-              rxn [ species B1; species XgtY ] [ species XgtY; species XgtY ]
+            [ rxn [ XgtY; XltY ] [ XltY; B1 ]
+              rxn [ B1; XltY ] [ XltY; XltY ]
+              rxn [ XltY; XgtY ] [ XgtY; B1 ]
+              rxn [ B1; XgtY ] [ XgtY; XgtY ]
 
               // Approximated majority for Y.
-              rxn [ species YgtX; species YltX ] [ species YltX; species B2 ]
-              rxn [ species B2; species YltX ] [ species YltX; species YltX ]
-              rxn [ species YltX; species YgtX ] [ species YgtX; species B2 ]
-              rxn [ species B2; species YgtX ] [ species YgtX; species YgtX ] ]
+              rxn [ YgtX; YltX ] [ YltX; B2 ]
+              rxn [ B2; YltX ] [ YltX; YltX ]
+              rxn [ YltX; YgtX ] [ YgtX; B2 ]
+              rxn [ B2; YgtX ] [ YgtX; YgtX ] ]
         | _ -> [])
 
 // Compiles a single command to a list of reactions.
@@ -167,19 +153,9 @@ let private initialEnv typeEnv clocksp flag constmap conc : Env =
 let private oscillator n firstspec spec =
     let rec oscillatorInner n firstspec spec acc =
         match spec with
-        | c1 :: c2 :: spec' ->
-            oscillatorInner
-                (n - 1)
-                firstspec
-                (c2 :: spec')
-                ([ rxn [ species c1; species c2 ] [ species c2; species c2 ] ] :: acc)
+        | c1 :: c2 :: spec' -> oscillatorInner (n - 1) firstspec (c2 :: spec') ([ rxn [ c1; c2 ] [ c2; c2 ] ] :: acc)
         | c :: spec' ->
-            oscillatorInner
-                (n - 1)
-                firstspec
-                spec'
-                ([ rxn [ species c; species firstspec ] [ species firstspec; species firstspec ] ]
-                 :: acc)
+            oscillatorInner (n - 1) firstspec spec' ([ rxn [ c; firstspec ] [ firstspec; firstspec ] ] :: acc)
         | [] -> List.rev acc
 
     oscillatorInner n firstspec spec []

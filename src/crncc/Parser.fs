@@ -45,8 +45,8 @@ let private pconst = identifier
 
 let private pnumber = float_ws
 
-let private pspecies2 = identifier |>> ExprSpecies.Species
-let private pspecies2Reserved = identifierOrReserved |>> ExprSpecies.Species
+let private pspecies2 = identifier
+let private pspecies2Reserved = identifierOrReserved
 
 let private pexpr = sepBy pspecies2 (str_ws "+")
 let private pexprReserved = sepBy pspecies2Reserved (str_ws "+")

@@ -136,7 +136,7 @@ let rec private astToTree' (node: ASTNode) =
     | NReactionS(ReactionS.Reaction(exp1, exp2, num)) ->
         Node("rxn", [astToTree' (NExprS exp1); astToTree' (NExprS exp2); astToTree' (NPNumberS num)])
     | NExprS(species) ->
-        let nspecies = List.map (fun expr -> match expr with Species spec -> NSpeciesS spec) species
+        let nspecies = List.map (fun spec -> NSpeciesS spec) species
         let nodes = List.map astToTree' nspecies
         Node("expr", nodes)
     | NConcS(ConcS.Conc(spec, value)) ->
