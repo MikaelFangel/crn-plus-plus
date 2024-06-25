@@ -4,21 +4,31 @@ open CRN.Typechecker
 open CRN.Simulator
 open CRN.Interpreter
 open CRN.Compiler
+open CRN.Visualization.TreeView
 
 open CommandLine
 
 [<Verb("parse", HelpText = "Parse a .crn into an AST")>]
 type ParserOptions = {
     [<Value(0, Required = true, HelpText = "Input file.")>]file: string
+    [<Option('t', "tikz", Default = false, HelpText= "Convert AST to TikZ commands.")>]tikz: bool
 }
 
 let runParse opts = 
     let text = System.IO.File.ReadAllText opts.file
     let result = tryParse text
-    printfn "%A" result
+
     match result with
-    | Ok _ -> 0
-    | Error _ -> 1
+    | Ok ast -> 
+        if opts.tikz then
+            Tikz.drawAST ast
+            |> printfn "%s"
+        else
+            printfn "%A" result
+        0
+    | Error err -> 
+        eprintfn "%A" err
+        1
 
 [<Verb("typecheck", HelpText = "Typecheck the given .crn file")>]
 type TypecheckerOptions = {

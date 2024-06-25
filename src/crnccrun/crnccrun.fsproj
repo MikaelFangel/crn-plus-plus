@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\crncc\crncc.fsproj" />
+    <ProjectReference Include="..\CRN.Visualization\CRN.Visualization.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
