@@ -108,8 +108,8 @@ let rec private exprtyperright env expr =
 let private reactiontyper env reaction =
     match reaction with
     | ReactionS.Reaction(_, _, speed) when speed <= 0.0 -> [ reactionSpeedError speed ] |> Error
-    | ReactionS.Reaction(ExprS.Expr [], _, _) -> [ immaculateConceptionError () ] |> Error
-    | ReactionS.Reaction(ExprS.Expr expr1, ExprS.Expr expr2, _) ->
+    | ReactionS.Reaction([], _, _) -> [ immaculateConceptionError () ] |> Error
+    | ReactionS.Reaction(expr1, expr2, _) ->
         exprtyperleft env expr1 |> Result.bind (fun env -> exprtyperright env expr2)
 
 /// Modules should not have lhs species appearing in the target

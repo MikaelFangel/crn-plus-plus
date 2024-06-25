@@ -5,11 +5,11 @@ open CRN.AST
 
 let private getlhs =
     function
-    | ReactionS.Reaction(ExprS.Expr(lhs), _, _) -> lhs
+    | ReactionS.Reaction(lhs, _, _) -> lhs
 
 let private getrhs =
     function
-    | ReactionS.Reaction(_, ExprS.Expr(rhs), _) -> rhs
+    | ReactionS.Reaction(_, rhs, _) -> rhs
 
 let private getspeed =
     function
@@ -22,7 +22,7 @@ let private getname =
 // get all of the unique species
 let private getspecies reactions =
     match reactions with
-    | ReactionS.Reaction(ExprS.Expr(rhs), ExprS.Expr(lhs), _) -> rhs @ lhs |> set
+    | ReactionS.Reaction(rhs, lhs, _) -> rhs @ lhs |> set
 
 // count how many x species exist in the given reactions
 let rec private count x reactions =
