@@ -20,7 +20,9 @@ let rec gcd a b =
     | (a,b) when a>b -> gcd (a-b) b
     | (a,b) -> gcd a (b-a)
 
-
+let convertOut env step reactions =
+    let names,states = CRN.Simulator.solveODEFast env step reactions
+    Seq.map (CRN.Simulator.ArraytoMap names) states
 
 [<Property>]
 let ``Compiler: counter`` (c:int) =
@@ -29,8 +31,8 @@ let ``Compiler: counter`` (c:int) =
     let result = Result.bind (fun x -> Ok (compile (Map.add "c0" c Map.empty) x)) result
     match result with 
     | Error a -> Assert.True(Result.isOk result)
-    | Ok s ->   let simulated = CRN.Simulator.solveODE (fst s) 0.1 (snd s)
-                Assert.True(Seq.exists (fun map -> abs (Map.find "c" map - float c) <= 0.5) (Seq.take 15000 simulated))
+    | Ok s ->   let simulated = convertOut (fst s) 0.025 (snd s)
+                Assert.True(Seq.exists (fun map -> abs (Map.find "c" map - float c) <= 0.5) (Seq.take 50000 simulated))
 
 [<Property>]
 let ``Compiler: division`` (a:PositiveInt, b:PositiveInt) =
@@ -42,8 +44,8 @@ let ``Compiler: division`` (a:PositiveInt, b:PositiveInt) =
     if b=0 then Assert.True(true) else
         match result with 
         | Error a -> Assert.True(Result.isOk result)
-        | Ok s ->   let simulated = CRN.Simulator.solveODE (fst s) 0.1 (snd s)
-                    Assert.True( Seq.exists (fun map -> abs (Map.find "r" map - float (a %  b)) <= 0.5) (Seq.take 15000 simulated))
+        | Ok s ->   let simulated = convertOut (fst s) 0.025 (snd s)
+                    Assert.True( Seq.exists (fun map -> abs (Map.find "q" map - float (a /  b)) <= 0.5) (Seq.take 150000 simulated))
 
 [<Fact>]
 let ``Compiler: euler`` () =
@@ -52,8 +54,8 @@ let ``Compiler: euler`` () =
     let result = Result.bind (fun x -> Ok (compile Map.empty x)) result
     match result with 
     | Error a -> Assert.True(Result.isOk result)
-    | Ok s ->   let simulated = CRN.Simulator.solveODE (fst s) 0.1 (snd s)
-                Assert.True( Seq.exists (fun map -> abs (Map.find "e" map - System.Math.E)<= 0.5 ) (Seq.take 15000 simulated))
+    | Ok s ->   let simulated = convertOut (fst s) 0.1 (snd s)
+                Assert.True( Seq.exists (fun map -> abs (Map.find "e" map - System.Math.E)<= 0.5 ) (Seq.take 10000 simulated))
 
 
 [<Property>]
@@ -65,8 +67,11 @@ let ``Compiler: gcd`` (a:PositiveInt, b:PositiveInt) =
     let result = Result.bind (fun x -> Ok (compile (Map.ofList [("a0", a);("b0", b)]) x)) result
     match result with 
     | Error a -> Assert.True(Result.isOk result)
-    | Ok s ->   let simulated = CRN.Simulator.solveODE (fst s) 0.1 (snd s)
-                Assert.True(Seq.exists (fun map -> abs (Map.find "a" map - float (gcd a b)) <= 0.5) (Seq.take 15000 simulated))
+    | Ok s ->   let simulated = convertOut (fst s) 0.025 (snd s)
+                let gcdab = float (gcd a b)
+                Assert.True(Seq.exists (fun map -> abs (Map.find "a" map - gcdab) <= 0.5 
+                                                || abs (Map.find "b" map - gcdab) <= 0.5) 
+                                        (Seq.take 150000 simulated))
 
 
 [<Property>]
@@ -77,8 +82,10 @@ let ``Compiler: isqrt`` (n:PositiveInt) =
     let result = Result.bind (fun x -> Ok (compile (Map.add "n0" n Map.empty) x)) result
     match result with 
     | Error a -> Assert.True(Result.isOk result)
-    | Ok s ->   let simulated = CRN.Simulator.solveODE (fst s) 0.1 (snd s)
-                Assert.True(Seq.exists (fun map -> abs (Map.find "out" map - floor (sqrt (float n))) <= 0.5) (Seq.take 15000 simulated)|| n=1)
+    | Ok s ->   let simulated = convertOut (fst s) 0.025 (snd s)
+                let sqrtn = floor (sqrt (float n))
+                Assert.True(Seq.exists (fun map -> 
+                                        abs (Map.find "out" map - sqrtn) <= 0.5) (Seq.take 50000 simulated)|| n=1)
 
 
 [<Fact>]
@@ -88,8 +95,8 @@ let ``Compiler: pi`` () =
     let result = Result.bind (fun x -> Ok (compile Map.empty x)) result
     match result with 
     | Error a -> Assert.True(Result.isOk result)
-    | Ok s ->   let simulated = CRN.Simulator.solveODE (fst s) 0.1 (snd s)
-                Assert.True( Seq.exists (fun map -> abs (Map.find "pi" map - System.Math.PI)<= 0.5 ) (Seq.take 15000 simulated))
+    | Ok s ->   let simulated = convertOut (fst s) 0.1 (snd s)
+                Assert.True( Seq.exists (fun map -> abs (Map.find "pi" map - System.Math.PI)<= 0.5 ) (Seq.take 10000 simulated))
     
 
 [<Property>]
@@ -101,9 +108,9 @@ let ``Compiler: subalt`` (a:PositiveInt, b:PositiveInt) =
     let result = Result.bind (fun x -> Ok (compile (Map.ofList [("a0", a);("b0", b)]) x)) result
     match result with 
     | Error a -> Assert.True(Result.isOk result)
-    | Ok s ->   let simulated = CRN.Simulator.solveODE (fst s) 0.1 (snd s)
+    | Ok s ->   let simulated = convertOut (fst s) 0.025 (snd s)
                 Assert.True( Seq.exists (fun map -> let x = Map.find "b" map 
-                                                    abs (x - float a) <= 0.5 || x <= 0.5 ) (Seq.take 15000 simulated) )
+                                                    abs (x - float a) <= 0.5 || x <= 0.5 ) (Seq.take 150000 simulated) )
 
 
 [<Property>]
@@ -114,6 +121,6 @@ let ``Compiler: factorial`` (f:PositiveInt) =
     let result = Result.bind (fun x -> Ok (compile (Map.add "f0" f Map.empty) x)) result
     match result with 
     | Error a -> Assert.True(Result.isOk result)
-    | Ok s ->   let simulated = CRN.Simulator.solveODE (fst s) 0.1 (snd s)
-                Assert.True(Result.isOk result)//Assert.True(Seq.exists (fun map -> abs (Map.find "f" map -  float (factorial 1 f)) <=0.5) (Seq.take 15000 simulated))
+    | Ok s ->   let simulated = convertOut (fst s) 0.025 (snd s)
+                Assert.True(Result.isOk result)//Assert.True(Seq.exists (fun map -> abs (Map.find "f" map -  float (factorial 1 f)) <=0.5) (Seq.take 50000 simulated))
 

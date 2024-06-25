@@ -1,6 +1,4 @@
-#r "nuget: FParsec, 1.1.1"
 #r "nuget: Plotly.NET, 4.2.0"
-
 
 #load "../src/crncc/AST.fs"
 #load "../src/crncc/Simulator.fs"
@@ -221,9 +219,33 @@ let clock9reaction =
                 [Species("X1")
                  Species("X1")]), 1.0)
         ]
+//let initial = Map.ofList ["X1", 1.0-8.0*(0.1e-11); "X2", 0.1e-11; "X3", 0.1e-11; "X4", 0.1e-11; "X5", 0.1e-11; "X6", 0.1e-11; "X7", 0.1e-11; "X8", 0.1e-11; "X9", 0.1e-11] 
+(*
+for a in 0..60 do
+    let a = float a
+    let initial = Map["A", a; "B", 0.0]
+    let (names, states) = (solveODEFast initial 0.01 sqrtreaction)
+    Seq.map (CRN.Simulator.ArraytoMap names) states 
+    |> Seq.take 2000 |> Seq.last |> Map.find "B"
+    |> fun b -> abs(sqrt a - b)|> printf "%A,"
+*)
+(*
+for a in 0..60 do
+    printf "%A " a
+    let a = float a
+    for b in 0..60 do
+        let b = float b
+        let initial = Map["A", a; "B", b; "C", 0.0; "H", 0.0]
+        let (names, states) = (solveODEFast initial 0.01 subreaction)
+        Seq.map (CRN.Simulator.ArraytoMap names) states 
+        |> Seq.take 2000 |> Seq.last |> Map.find "C"
+        |> fun c -> let cmp =a-b 
+                    if cmp <0 then  abs (0.0 - c) else abs (cmp - c)
+                     |> printf "%A,"
+    printfn ""
+*)
 
-
-let initial = Map.ofList ["X1", 1.0-8.0*(0.1e-11); "X2", 0.1e-11; "X3", 0.1e-11; "X4", 0.1e-11; "X5", 0.1e-11; "X6", 0.1e-11; "X7", 0.1e-11; "X8", 0.1e-11; "X9", 0.1e-11] 
-
-let test = (solveODE initial 0.01 clock9reaction)
-CRN.Visualization.plotState (fun s -> seq [ "X1"; "X2"; "X3"; "X4"; "X5"; "X6"; "X7"; "X8"; "X9" ] |> Seq.contains s) 200000 test
+let initial = Map["A", 5.0; "B", 5.0; "C", 0.0; "H", 0.0]
+let (names, states) = (solveODEFast initial 0.01 subreaction)
+Seq.map (CRN.Simulator.ArraytoMap names) states
+|> CRN.Visualization.plotState (fun s -> seq [ "C" ] |> Seq.contains s) 2000 

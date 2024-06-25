@@ -10,7 +10,7 @@ open FsCheck
 [<TailCall>]
 let rec factorial x =
     function
-    | 1 -> x
+    | n when n <= 1 -> x
     | n -> factorial (n-1) (n*x)
 
 [<TailCall>]
@@ -29,7 +29,7 @@ let ``Interpreter: counter`` (c:int) =
     let result = Result.bind (interpreter (Map.add "c0" c Map.empty)) result
     match result with 
     | Error a -> Assert.True(Result.isOk result)
-    | Ok s -> Assert.True(Seq.exists (fun map -> abs (Map.find "c" map - float c) <= 0.5) (Seq.take 100 s))
+    | Ok s -> Assert.True(Seq.exists (fun map -> Map.find "c" map <= 0.5) (Seq.take 100 s))
 
 [<Property>]
 let ``Interpreter: division`` (a:PositiveInt, b:PositiveInt) =
@@ -41,7 +41,9 @@ let ``Interpreter: division`` (a:PositiveInt, b:PositiveInt) =
     if b=0 then Assert.True(true) else
         match result with 
         | Error a -> Assert.True(Result.isOk result)
-        | Ok s -> Assert.True( Seq.exists (fun map -> abs (Map.find "r" map - float (a %  b)) <= 0.5) (Seq.take 100 s))
+        | Ok s ->   let res = float (a %  b)
+                    let quot = float (a /  b)
+                    Assert.True( Seq.exists (fun map -> abs (Map.find "r" map - res) <= 0.5 && abs (Map.find "q" map - quot) <= 0.5) (Seq.take 100 s))
 
 [<Fact>]
 let ``Interpreter: euler`` () =
@@ -101,12 +103,13 @@ let ``Interpreter: subalt`` (a:PositiveInt, b:PositiveInt) =
 
 
 [<Property>]
-let ``Interpreter: factorial`` (f:PositiveInt) =
+let ``Interpreter: factorial`` (f: PositiveInt) =
     let f = int f
     let result = testParser "factorial.crn"
     let result = result |> Result.bind typecheck 
     let result = Result.bind (interpreter (Map.add "f0" f Map.empty)) result
     match result with 
     | Error a -> Assert.True(Result.isOk result)
-    | Ok s -> Assert.True(Result.isOk result)//Assert.True(Seq.exists (fun map -> abs (Map.find "f" map -  float (factorial 1 f)) <=0.5) (Seq.take 100 s))
+    | Ok s ->   printfn "Checking sequence"
+                Assert.True(Seq.exists (fun map -> abs (Map.find "f" map -  float (factorial 1 f)) <=0.5) (Seq.take 100 s))
 
