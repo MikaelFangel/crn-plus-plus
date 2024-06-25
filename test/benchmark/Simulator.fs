@@ -120,3 +120,13 @@ type SimulatorBenchmarking() =
             |> Seq.toList
             |> ignore
         | None -> failwith "No ODE to benchmark."
+
+type CompilerBenchmarking() =
+
+    [<Benchmark>]
+    member _.CompilerPi() =
+        getFile filePi
+
+    [<Benchmark>]
+    member _.CompilerSubAlt() =
+        getFile fileSubAlt
