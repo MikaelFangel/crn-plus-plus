@@ -11,7 +11,7 @@ open FsCheck
 let rec factorial x =
     function
     | n when n <= 1 -> x
-    | n -> factorial (n-1) (n*x)
+    | n -> factorial (n*x) (n-1)
 
 [<TailCall>]
 let rec gcd a b =

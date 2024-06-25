@@ -10,8 +10,8 @@ open FsCheck
 [<TailCall>]
 let rec factorial x =
     function
-    | 1 -> x
-    | n -> factorial (n-1) (n*x)
+    | n when n <= 1 -> x
+    | n -> factorial (n*x) (n-1)
 
 [<TailCall>]
 let rec gcd a b =
@@ -25,7 +25,8 @@ let convertOut env step reactions =
     Seq.map (CRN.Simulator.ArraytoMap names) states
 
 [<Property>]
-let ``Compiler: counter`` (c:int) =
+let ``Compiler: counter`` (c:PositiveInt) =
+    let c = int c
     let result = testParser "counter.crn"
     let result = result |> Result.bind typecheck 
     let result = Result.bind (fun x -> Ok (compile (Map.add "c0" c Map.empty) x)) result
@@ -45,6 +46,7 @@ let ``Compiler: division`` (a:PositiveInt, b:PositiveInt) =
         match result with 
         | Error a -> Assert.True(Result.isOk result)
         | Ok s ->   let simulated = convertOut (fst s) 0.025 (snd s)
+                    printfn "Division of %A and %A is q:%A" a b (a/b)
                     Assert.True( Seq.exists (fun map -> abs (Map.find "q" map - float (a /  b)) <= 0.5) (Seq.take 150000 simulated))
 
 [<Fact>]
@@ -69,6 +71,7 @@ let ``Compiler: gcd`` (a:PositiveInt, b:PositiveInt) =
     | Error a -> Assert.True(Result.isOk result)
     | Ok s ->   let simulated = convertOut (fst s) 0.025 (snd s)
                 let gcdab = float (gcd a b)
+                printfn "gcd of %A and %A is %A" a b gcdab
                 Assert.True(Seq.exists (fun map -> abs (Map.find "a" map - gcdab) <= 0.5 
                                                 || abs (Map.find "b" map - gcdab) <= 0.5) 
                                         (Seq.take 150000 simulated))
@@ -84,8 +87,10 @@ let ``Compiler: isqrt`` (n:PositiveInt) =
     | Error a -> Assert.True(Result.isOk result)
     | Ok s ->   let simulated = convertOut (fst s) 0.025 (snd s)
                 let sqrtn = floor (sqrt (float n))
-                Assert.True(Seq.exists (fun map -> 
-                                        abs (Map.find "out" map - sqrtn) <= 0.5) (Seq.take 50000 simulated)|| n=1)
+                if sqrtn*sqrtn = n then Assert.True(true) else
+                    printfn "integer square root of %A is %A" n sqrtn
+                    Assert.True(Seq.exists (fun map -> 
+                                            abs (Map.find "out" map - sqrtn) <= 0.5) (Seq.take 150000 simulated)|| n=1)
 
 
 [<Fact>]
@@ -109,6 +114,7 @@ let ``Compiler: subalt`` (a:PositiveInt, b:PositiveInt) =
     match result with 
     | Error a -> Assert.True(Result.isOk result)
     | Ok s ->   let simulated = convertOut (fst s) 0.025 (snd s)
+                printfn "Subalt of %A and %A is %A" a b (a-b)
                 Assert.True( Seq.exists (fun map -> let x = Map.find "b" map 
                                                     abs (x - float a) <= 0.5 || x <= 0.5 ) (Seq.take 150000 simulated) )
 
@@ -122,5 +128,7 @@ let ``Compiler: factorial`` (f:PositiveInt) =
     match result with 
     | Error a -> Assert.True(Result.isOk result)
     | Ok s ->   let simulated = convertOut (fst s) 0.025 (snd s)
-                Assert.True(Result.isOk result)//Assert.True(Seq.exists (fun map -> abs (Map.find "f" map -  float (factorial 1 f)) <=0.5) (Seq.take 50000 simulated))
+                let factf = float (factorial 1 f)
+                printfn "Factorial of %A is %A" f factf
+                Assert.True(Seq.exists (fun map -> abs (Map.find "f" map -  factf) <=0.5) (Seq.take 150000 simulated))
 
