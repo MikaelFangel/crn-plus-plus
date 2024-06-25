@@ -22,7 +22,7 @@ let private species =
 // Create clock species by given the number of steps.
 [<TailCall>]
 let private clockSpecies nstep =
-    let n = nstep * 3
+    let n = nstep * 2
 
     let rec clockSpeciesInner acc =
         function
@@ -138,7 +138,7 @@ let private initialEnv typeEnv clocksp flag constmap conc : Env =
     let iv = 0.1e-11
     let specv = (float (List.length clocksp) * iv) / 2.0
     let chead = clocksp |> List.head |> string
-    let clast= clocksp |> List.rev |> List.head |> string
+    let clast = clocksp |> List.rev |> List.head |> string
 
     let state =
         typeEnv.Species
@@ -192,13 +192,16 @@ let compile (constmap: Env) (ast: TypedAST) =
 
     let (conc, step) = (conc |> List.collect id, step |> List.collect id)
     let spec = step |> List.length |> clockSpecies
-    let oscillator = oscillator (spec |> List.length) spec.[0] spec
 
+    let sclocks =
+        spec |> List.indexed |> List.filter (fun (i, _) -> i % 2 = 0) |> List.map snd
+
+    let oscillator = oscillator (spec |> List.length) (List.head spec) spec
     let env = initialEnv (snd ast) spec [ H; B1; B2 ] constmap conc
 
     let rxn =
         step
-        |> List.mapi (fun i s -> addSpecToStep spec.[3 + i * 3 - 1] s)
+        |> List.mapi (fun i s -> addSpecToStep (List.item i sclocks) s)
         |> List.append oscillator
         |> List.collect id
 
