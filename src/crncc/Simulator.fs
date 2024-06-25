@@ -123,9 +123,13 @@ type eqmask_t = float array array
 module private Functional2 =
 
     let inline private applyrxn (arr: float array) (rxnmask: int array) : float =
+        let folder (acc: float) (elem: float, mask: int) =
+            if elem > 0 then
+                acc * pown elem mask
+            else
+                acc
         Array.zip arr rxnmask
-        |> Array.filter (fun (_, maskelem) -> maskelem > 0)
-        |> Array.fold (fun acc (elem, mask) -> acc * pown elem mask) 1.0
+        |> Array.fold folder 1.0
 
     let inline private composerxns (rxnresults: float array) (eqmask: float array) : float =
         Array.zip rxnresults eqmask
