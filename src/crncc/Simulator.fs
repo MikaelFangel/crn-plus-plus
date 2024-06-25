@@ -15,10 +15,6 @@ let private getspeed =
     function
     | ReactionS.Reaction(_, _, speed) -> speed
 
-let private getname =
-    function
-    | ExprSpecies.Species name -> name
-
 // get all of the unique species
 let private getspecies reactions =
     match reactions with
@@ -28,7 +24,7 @@ let private getspecies reactions =
 let rec private count x reactions =
     match reactions with
     | [] -> 0
-    | (Species y :: ys) when x = y -> 1 + (count x ys)
+    | (y :: ys) when x = y -> 1 + (count x ys)
     | (y :: ys) -> count x ys
 
 // get the change of the given species between lhs and rhs
@@ -75,16 +71,14 @@ module private Functional1 =
         List.fold (fun state m -> composeOde state m) (fun _ -> 0.0) odes
 
     let private odeof current lhs rhs speed : OdeEq =
-        let name = getname current
         let rhsthis = List.filter (fun elem -> elem = current) rhs
         // change indicates the multiplicity of the current element
-        let multiplicity = getchange lhs rhsthis name
+        let multiplicity = getchange lhs rhsthis current
 
 
         let ode' (Os: Map<string, float>) =
             let res =
                 lhs
-                |> List.map getname
                 |> List.map (fun spec -> Map.find spec Os)
                 |> List.fold (fun acc v -> acc * v) 1.0
 
@@ -104,7 +98,7 @@ module private Functional1 =
                     |> List.map (fun (lhs, rhs, speed) -> odeof one lhs rhs speed)
                     |> composeOdes
 
-                getname one, func)
+                one, func)
             |> Map.ofList
 
         { Eqs = m }
@@ -148,14 +142,13 @@ module private Functional2 =
     let internal forwardEuler input rxnmasks eqmasks time =
         let diff = differences input rxnmasks eqmasks
 
-        Array.zip input diff
-        |> Array.map (fun (cur, dif) -> (cur + dif * time))
+        Array.zip input diff |> Array.map (fun (cur, dif) -> (cur + dif * time))
 
 /// Imperative implementation of the ODE solver
 /// This implementation avoids most intermediate allocations and does all operations
-/// inside "hot loops" in the most direct way which will most likely result in the best 
+/// inside "hot loops" in the most direct way which will most likely result in the best
 /// possible performance.
-/// 
+///
 /// The other idea I had would be to metaprogram C code and call a C compiler, build it
 /// onto dynlib, link it at runtime and use shared memory to directly access unmanaged
 /// memory which would completely avoid allocations.

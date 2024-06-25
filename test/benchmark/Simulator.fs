@@ -11,9 +11,9 @@ let clockinitial =
     Map.ofList [ "A", 1.0 - 2.0 * clockoffset; "B", clockoffset; "C", clockoffset ]
 
 let clockreaction =
-    [ ReactionS.Reaction([ Species("A"); Species("B") ], [ Species("B"); Species("B") ], 1.0)
-      ReactionS.Reaction([ Species("B"); Species("C") ], [ Species("C"); Species("C") ], 1.0)
-      ReactionS.Reaction([ Species("C"); Species("A") ], [ Species("A"); Species("A") ], 1.0) ]
+    [ ReactionS.Reaction([ "A"; "B" ], [ "B"; "B" ], 1.0)
+      ReactionS.Reaction([ "B"; "C" ], [ "C"; "C" ], 1.0)
+      ReactionS.Reaction([ "C"; "A" ], [ "A"; "A" ], 1.0) ]
 
 let filePi =
     "crn = {

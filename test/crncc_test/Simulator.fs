@@ -6,8 +6,8 @@ open Xunit
 
 //multiplication
 let mulreaction =
-    [ ReactionS.Reaction([ Species("A"); Species("B") ], [ Species("A"); Species("B"); Species("C") ], 1.0)
-      ReactionS.Reaction([ Species("C") ], [], 1.0) ]
+    [ ReactionS.Reaction([ "A"; "B" ], [ "A"; "B"; "C" ], 1.0)
+      ReactionS.Reaction([ "C" ], [], 1.0) ]
 
 let printresult names results =
     List.zip names (Array.toList results)

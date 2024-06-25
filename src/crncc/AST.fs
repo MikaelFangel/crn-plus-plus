@@ -11,11 +11,6 @@ type TypingEnv =
 [<RequireQualifiedAccess>]
 type SpeciesS = string
 
-type ExprSpecies = Species of SpeciesS
-    with override this.ToString() =
-            match this with 
-                Species(s) -> s.ToString()
-
 [<RequireQualifiedAccess>]
 type PNumberS = float
 
@@ -35,7 +30,7 @@ type ConcS = Conc of SpeciesS * ValueS
                     Conc(species, value) -> $"conc[{species}, {value}]"
 
 [<RequireQualifiedAccess>]
-type ExprS = list<ExprSpecies>
+type ExprS = list<SpeciesS>
 
 [<RequireQualifiedAccess>]
 type ReactionS = Reaction of ExprS * ExprS * PNumberS

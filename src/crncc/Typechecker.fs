@@ -91,7 +91,7 @@ let private checkmutation name env =
 let rec private exprtyperleft env expr =
     match expr with
     | [] -> Ok(env)
-    | Species(head) :: tail ->
+    | head :: tail ->
         let env = resolvereference head env
         exprtyperleft env tail
 
@@ -100,7 +100,7 @@ let rec private exprtyperleft env expr =
 let rec private exprtyperright env expr =
     match expr with
     | [] -> Ok(env)
-    | Species(head) :: tail ->
+    | head :: tail ->
         let env' = addreference head env
         exprtyperright env' tail
 
