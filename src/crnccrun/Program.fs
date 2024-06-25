@@ -83,7 +83,7 @@ let runInterpreter opts =
         match result with
         | Ok sequence ->
             if opts.plot then
-                let species = opts.names.Split() |> Seq.ofArray |> Seq.filter (fun s -> s <> "")
+                let species = opts.names.Split(";") |> Seq.ofArray |> Seq.filter (fun s -> s <> "")
 
                 plotState
                     (fun s ->
@@ -149,9 +149,8 @@ let runSimulator opts =
     match typedAst with
     | Ok env ->
         let (env, rxn) = compile constmap env
-        let sim = solveODE env 0.1 rxn
-        let species = opts.names.Split() |> Seq.ofArray |> Seq.filter (fun s -> s <> "")
-        printfn "%A" (Seq.isEmpty species)
+        let sim = solveODE env 0.01 rxn
+        let species = opts.names.Split(";") |> Seq.ofArray |> Seq.filter (fun s -> s <> "")
 
         if opts.plot then
             plotState
