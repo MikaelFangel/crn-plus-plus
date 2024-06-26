@@ -10,214 +10,214 @@ open CRN.AST
 //Load
 let ldreaction = 
         [ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("A")]), 
-            ExprS.Expr(
-                [Species("A")
-                 Species("B")
+            (
+                [("A")]), 
+            (
+                [("A")
+                 ("B")
                 ]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("B")]
+            (
+                [("B")]
             ),
-            ExprS.Expr([]), 1.0
+            ([]), 1.0
          )]
 //Addition
 let addreaction = 
         [ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("A")]), 
-            ExprS.Expr(
-                [Species("A")
-                 Species("C")
+            (
+                [("A")]), 
+            (
+                [("A")
+                 ("C")
                 ]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("B")]), 
-            ExprS.Expr(
-                [Species("B")
-                 Species("C")
+            (
+                [("B")]), 
+            (
+                [("B")
+                 ("C")
                 ]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("C")]
+            (
+                [("C")]
             ),
-            ExprS.Expr([]), 1.0
+            ([]), 1.0
          )]
 
 //Subtraction
 let subreaction = 
         [ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("A")]), 
-            ExprS.Expr(
-                [Species("A")
-                 Species("C")]), 1.0)
+            (
+                [("A")]), 
+            (
+                [("A")
+                 ("C")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("B")]), 
-            ExprS.Expr(
-                [Species("B")
-                 Species("H")]), 1.0)
+            (
+                [("B")]), 
+            (
+                [("B")
+                 ("H")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("C")]),
-            ExprS.Expr([]), 1.0)
+            (
+                [("C")]),
+            ([]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("C")
-                 Species("H")]),
-            ExprS.Expr(
+            (
+                [("C")
+                 ("H")]),
+            (
                 []), 1.0)
          ]
 
 //multiplication
 let mulreaction = 
         [ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("A")
-                 Species("B")]), 
-            ExprS.Expr(
-                [Species("A")
-                 Species("B")
-                 Species("C")]), 1.0)
+            (
+                [("A")
+                 ("B")]), 
+            (
+                [("A")
+                 ("B")
+                 ("C")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("C")]
+            (
+                [("C")]
             ),
-            ExprS.Expr([]), 1.0
+            ([]), 1.0
          )]
 
 //division
 let divreaction = 
         [ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("A")]), 
-            ExprS.Expr(
-                [Species("A")
-                 Species("C")]), 1.0)
+            (
+                [("A")]), 
+            (
+                [("A")
+                 ("C")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("B")
-                 Species("C")]
+            (
+                [("B")
+                 ("C")]
             ),
-            ExprS.Expr(
-                [Species("B")]), 1.0
+            (
+                [("B")]), 1.0
          )]
 
 //square root
 let sqrtreaction = 
         [ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("A")]), 
-            ExprS.Expr(
-                [Species("A")
-                 Species("B")]), 1.0)
+            (
+                [("A")]), 
+            (
+                [("A")
+                 ("B")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("B")
-                 Species("B")]
+            (
+                [("B")
+                 ("B")]
             ),
-            ExprS.Expr(
+            (
                 []), 0.5
          )]
 
 //clock simulator
 let clock3reaction = 
         [ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("A")
-                 Species("B")]), 
-            ExprS.Expr(
-                [Species("B")
-                 Species("B")]), 1.0)
+            (
+                [("A")
+                 ("B")]), 
+            (
+                [("B")
+                 ("B")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("B")
-                 Species("C")]
+            (
+                [("B")
+                 ("C")]
             ),
-            ExprS.Expr(
-                [Species("C")
-                 Species("C")]), 1.0)
+            (
+                [("C")
+                 ("C")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("C")
-                 Species("A")]
+            (
+                [("C")
+                 ("A")]
             ),
-            ExprS.Expr(
-                [Species("A")
-                 Species("A")]), 1.0
+            (
+                [("A")
+                 ("A")]), 1.0
         )]
 let clock9reaction = 
         [ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("X1")
-                 Species("X2")]), 
-            ExprS.Expr(
-                [Species("X2")
-                 Species("X2")]), 1.0)
+            (
+                [("X1")
+                 ("X2")]), 
+            (
+                [("X2")
+                 ("X2")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("X2")
-                 Species("X3")]
+            (
+                [("X2")
+                 ("X3")]
             ),
-            ExprS.Expr(
-                [Species("X3")
-                 Species("X3")]), 1.0)
+            (
+                [("X3")
+                 ("X3")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("X3")
-                 Species("X4")]
+            (
+                [("X3")
+                 ("X4")]
             ),
-            ExprS.Expr(
-                [Species("X4")
-                 Species("X4")]), 1.0)
+            (
+                [("X4")
+                 ("X4")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("X4")
-                 Species("X5")]), 
-            ExprS.Expr(
-                [Species("X5")
-                 Species("X5")]), 1.0)
+            (
+                [("X4")
+                 ("X5")]), 
+            (
+                [("X5")
+                 ("X5")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("X5")
-                 Species("X6")]
+            (
+                [("X5")
+                 ("X6")]
             ),
-            ExprS.Expr(
-                [Species("X6")
-                 Species("X6")]), 1.0)
+            (
+                [("X6")
+                 ("X6")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("X6")
-                 Species("X7")]
+            (
+                [("X6")
+                 ("X7")]
             ),
-            ExprS.Expr(
-                [Species("X7")
-                 Species("X7")]), 1.0)
+            (
+                [("X7")
+                 ("X7")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("X7")
-                 Species("X8")]), 
-            ExprS.Expr(
-                [Species("X8")
-                 Species("X8")]), 1.0)
+            (
+                [("X7")
+                 ("X8")]), 
+            (
+                [("X8")
+                 ("X8")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("X8")
-                 Species("X9")]
+            (
+                [("X8")
+                 ("X9")]
             ),
-            ExprS.Expr(
-                [Species("X9")
-                 Species("X9")]), 1.0)
+            (
+                [("X9")
+                 ("X9")]), 1.0)
          ReactionS.Reaction(
-            ExprS.Expr(
-                [Species("X9")
-                 Species("X1")]
+            (
+                [("X9")
+                 ("X1")]
             ),
-            ExprS.Expr(
-                [Species("X1")
-                 Species("X1")]), 1.0)
+            (
+                [("X1")
+                 ("X1")]), 1.0)
         ]
 //let initial = Map.ofList ["X1", 1.0-8.0*(0.1e-11); "X2", 0.1e-11; "X3", 0.1e-11; "X4", 0.1e-11; "X5", 0.1e-11; "X6", 0.1e-11; "X7", 0.1e-11; "X8", 0.1e-11; "X9", 0.1e-11] 
 (*
@@ -245,7 +245,7 @@ for a in 0..60 do
     printfn ""
 *)
 
-let initial = Map["A", 5.0; "B", 5.0; "C", 0.0; "H", 0.0]
-let (names, states) = (solveODEFast initial 0.01 subreaction)
+let initial = Map["A", 1.304408512; "B", 0.02074312655; "C", 0.0]
+let (names, states) = (solveODEFast initial 0.01 divreaction)
 Seq.map (CRN.Simulator.ArraytoMap names) states
-|> CRN.Visualization.plotState (fun s -> seq [ "C" ] |> Seq.contains s) 2000 
+|> CRN.Visualization.Library.plotState (fun s -> seq [ "C" ] |> Seq.contains s) 20000 
