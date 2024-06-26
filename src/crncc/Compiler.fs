@@ -129,7 +129,7 @@ let private initialEnv typeEnv clocksp flag constmap conc : Env =
     let state =
         typeEnv.Species
         |> Seq.append (flag |> List.map (fun s -> s |> string))
-        |> Seq.fold (fun acc s -> Map.add s 0.0 acc) constmap
+        |> Seq.fold (fun acc s -> Map.add s 0.0 acc) Map.empty
         |> (fun map -> List.fold (fun acc k -> Map.add (string k) 0.5 acc) map flags)
         |> (fun map -> List.fold (fun acc c -> Map.add (string c) iv acc) map clocksp)
         |> Map.add (chead) (0.5 - specv)
