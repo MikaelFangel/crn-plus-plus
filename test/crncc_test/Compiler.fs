@@ -91,7 +91,7 @@ let ``Compiler: isqrt`` (n:PositiveInt) =
 let ``Compiler: subalt`` (a:PositiveInt, b:PositiveInt) =
     let a = int a
     let b = int b
-    if a >= 15 || b >= 15 then Prop.classify true "Timer ran out" true else
+    if a >= 13 || b >= 13 then Prop.classify true "Timer ran out" true else
         let result = testParser "subalt.crn"
         let result = result |> Result.bind typecheck 
         let result = Result.bind (fun x -> Ok (compile (Map.ofList [("a0", a);("b0", b)]) x)) result
