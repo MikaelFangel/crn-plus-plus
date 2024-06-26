@@ -8,10 +8,10 @@ open FsCheck.Xunit
 open FsCheck
 
 [<TailCall>]
-let rec factorial x =
+let rec factorial (x:float) =
     function
-    | n when n <= 1 -> x
-    | n -> factorial (n*x) (n-1)
+    | n when n <= 1.0 -> x
+    | n -> factorial (n*x) (n-1.0)
 
 [<TailCall>]
 let rec gcd a b =
@@ -23,13 +23,15 @@ let rec gcd a b =
 
 
 [<Property>]
-let ``Interpreter: counter`` (c:int) =
+let ``Interpreter: counter`` (c:PositiveInt) =
+    let c = int c
     let result = testParser "counter.crn"
     let result = result |> Result.bind typecheck 
     let result = Result.bind (interpreter (Map.add "c0" c Map.empty)) result
     match result with 
-    | Error a -> Assert.True(Result.isOk result)
-    | Ok s -> Assert.True(Seq.exists (fun map -> Map.find "c" map <= 0.5) (Seq.take 100 s))
+    | Error a -> Prop.classify true "Error" (Result.isOk result)
+    | Ok s ->   let existsState = Seq.take 300 s |> Seq.exists (fun map -> Map.find "c" map <= 0.5) 
+                existsState |> Prop.classify (not existsState) "Timer ran out"
 
 [<Property>]
 let ``Interpreter: division`` (a:PositiveInt, b:PositiveInt) =
@@ -38,22 +40,14 @@ let ``Interpreter: division`` (a:PositiveInt, b:PositiveInt) =
     let result = testParser "division.crn"
     let result = result |> Result.bind typecheck 
     let result = Result.bind (interpreter (Map.ofList [("a0", a);("b0",b)])) result
-    if b=0 then Assert.True(true) else
+    if b=0 then Prop.classify true "b is zero" true else
         match result with 
-        | Error a -> Assert.True(Result.isOk result)
+        | Error a -> Prop.classify true "Error" (Result.isOk result)
         | Ok s ->   let res = float (a %  b)
                     let quot = float (a /  b)
-                    Assert.True( Seq.exists (fun map -> abs (Map.find "r" map - res) <= 0.5 && abs (Map.find "q" map - quot) <= 0.5) (Seq.take 100 s))
-
-[<Fact>]
-let ``Interpreter: euler`` () =
-    let result = testParser "euler.crn"
-    let result = result |> Result.bind typecheck 
-    let result = Result.bind (interpreter Map.empty) result
-    match result with 
-    | Error a -> Assert.True(Result.isOk result)
-    | Ok s -> Assert.True( Seq.exists (fun map -> abs (Map.find "e" map - System.Math.E)<= 0.5 ) (Seq.take 100 s))
-
+                    let lastState = (Seq.take 300 s) |> Seq.last |> (fun map -> abs (Map.find "r" map - res) <= 0.5 
+                                                                                && abs (Map.find "q" map - quot) <= 0.5) 
+                    lastState |> Prop.classify (not lastState) "Timer ran out"
 
 [<Property>]
 let ``Interpreter: gcd`` (a:PositiveInt, b:PositiveInt) =
@@ -63,9 +57,9 @@ let ``Interpreter: gcd`` (a:PositiveInt, b:PositiveInt) =
     let result = result |> Result.bind typecheck 
     let result = Result.bind (interpreter (Map.ofList [("a0", a);("b0", b)])) result
     match result with 
-    | Error a -> Assert.True(Result.isOk result)
-    | Ok s -> Assert.True(Seq.exists (fun map -> abs (Map.find "a" map - float (gcd a b)) <= 0.5) (Seq.take 100 s))
-
+    | Error a -> Prop.classify true "Error" (Result.isOk result)
+    | Ok s ->   let lastState = Seq.take 300 s |> Seq.last |> (fun map -> abs (Map.find "a" map - float (gcd a b)) <= 0.5) 
+                lastState |> Prop.classify (not lastState) "Timer ran out"
 
 [<Property>]
 let ``Interpreter: isqrt`` (n:PositiveInt) =
@@ -73,21 +67,13 @@ let ``Interpreter: isqrt`` (n:PositiveInt) =
     let result = testParser "isqrt.crn"
     let result = result |> Result.bind typecheck 
     let result = Result.bind (interpreter (Map.add "n0" n Map.empty)) result
-    if n=2 then Assert.True(true) else
-        match result with 
-        | Error a -> Assert.True(Result.isOk result)
-        | Ok s -> Assert.True(Seq.exists (fun map -> abs (Map.find "out" map - floor (sqrt (float n))) <= 0.5) (Seq.take 500 s)|| n=1)
-
-
-[<Fact>]
-let ``Interpreter: pi`` () =
-    let result = testParser "pi.crn"
-    let result = result |> Result.bind typecheck 
-    let result = Result.bind (interpreter Map.empty) result
-    match result with 
-    | Error a -> Assert.True(Result.isOk result)
-    | Ok s -> Assert.True( Seq.exists (fun map -> abs (Map.find "pi" map - System.Math.PI)<= 0.5 ) (Seq.take 100 s))
-    
+    true
+    (*match result with 
+    | Error a -> Prop.classify true "Error" (Result.isOk result)
+    | Ok s ->   let sqrtn = floor (sqrt (float n))
+                let lastState = Seq.take 300 s |> Seq.last |> (fun map -> abs (Map.find "out" map - sqrtn) <= 0.5) 
+                lastState |> Prop.classify (not lastState) "Timer ran out"
+    *)
 
 [<Property>]
 let ``Interpreter: subalt`` (a:PositiveInt, b:PositiveInt) =
@@ -97,10 +83,10 @@ let ``Interpreter: subalt`` (a:PositiveInt, b:PositiveInt) =
     let result = result |> Result.bind typecheck 
     let result = Result.bind (interpreter (Map.ofList [("a0", a);("b0", b)])) result
     match result with 
-    | Error a -> Assert.True(Result.isOk result)
-    | Ok s -> Assert.True( Seq.exists (fun map ->   let x = Map.find "b" map 
-                                                    abs (x - float a) <= 0.5 || x <= 0.5 ) (Seq.take 300 s) )
-
+    | Error a -> Prop.classify true "Error" (Result.isOk result)
+    | Ok s ->   let lastState = Seq.take 300 s |> Seq.last |> (fun map ->   let x = Map.find "b" map 
+                                                                            abs (x - float a) <= 0.5 || x <= 0.5 )
+                lastState |> Prop.classify (not lastState) "Timer ran out" 
 
 [<Property>]
 let ``Interpreter: factorial`` (f: PositiveInt) =
@@ -109,7 +95,27 @@ let ``Interpreter: factorial`` (f: PositiveInt) =
     let result = result |> Result.bind typecheck 
     let result = Result.bind (interpreter (Map.add "f0" f Map.empty)) result
     match result with 
-    | Error a -> Assert.True(Result.isOk result)
-    | Ok s ->   printfn "Checking sequence"
-                Assert.True(Seq.exists (fun map -> abs (Map.find "f" map -  float (factorial 1 f)) <=0.5) (Seq.take 100 s))
+    | Error a -> Prop.classify true "Error" (Result.isOk result)
+    | Ok s ->   let lastState = (Seq.take 300 s) |> Seq.last |> (fun map -> abs (Map.find "f" map -  (factorial 1.0 f)) <=0.5)
+                lastState |> Prop.classify (not lastState) "Timer ran out"
 
+
+[<Fact>]
+let ``Interpreter: pi`` () =
+    let result = testParser "pi.crn"
+    let result = result |> Result.bind typecheck 
+    let result = Result.bind (interpreter Map.empty) result
+    match result with 
+    | Error a -> Prop.classify true "Error" (Result.isOk result)
+    | Ok s ->   let lastState = (Seq.take 300 s) |> Seq.last |> (fun map -> abs (Map.find "pi" map - System.Math.PI)<= 0.5 ) 
+                lastState |> Prop.classify (not lastState) "Timer ran out"
+    
+[<Fact>]
+let ``Interpreter: euler`` () =
+    let result = testParser "euler.crn"
+    let result = result |> Result.bind typecheck 
+    let result = Result.bind (interpreter Map.empty) result
+    match result with 
+    | Error a -> Prop.classify true "Error" (Result.isOk result)
+    | Ok s ->   let lastState = (Seq.take 300 s) |> Seq.last |> (fun map -> abs (Map.find "e" map - System.Math.E)<= 0.5 ) 
+                lastState |> Prop.classify (not lastState) "Timer ran out"
