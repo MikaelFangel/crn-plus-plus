@@ -167,6 +167,8 @@ let runSimulator opts =
         0
     | Error _ -> 1
 
+#nowarn "25"
+// Following matches should fail if they fallthrough
 [<EntryPoint>]
 let main args =
     let result =

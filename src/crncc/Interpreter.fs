@@ -29,11 +29,13 @@ let private stepModule (oldstate:State) newstate cmp =
 let rec private step oldstate newstate cmp =
     function
     | [] -> (newstate, cmp)
-    | Reaction x::tail ->  raise (ReactionEncountered "Found a reaction")
-    | Module x::tail -> let (state, newcmp) = stepModule oldstate newstate cmp x
-                        step oldstate state newcmp tail
-    | Condition x::tail -> let (state, newcmp) = stepCondition oldstate newstate cmp x
-                           step oldstate state newcmp tail
+    | CommandS.Reaction _::_ ->  raise (ReactionEncountered "Found a reaction")
+    | CommandS.Module x::tail -> 
+        let (state, newcmp) = stepModule oldstate newstate cmp x
+        step oldstate state newcmp tail
+    | CommandS.Condition x::tail -> 
+        let (state, newcmp) = stepCondition oldstate newstate cmp x
+        step oldstate state newcmp tail
 and private stepCondition (oldstate:State) newstate cmp cond =
     let (x,y) = cmp
     let xconc = Map.find x oldstate
