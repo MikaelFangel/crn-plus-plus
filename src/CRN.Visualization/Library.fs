@@ -1,4 +1,4 @@
-﻿module CRN.Visualization
+﻿module CRN.Visualization.Library
 
 open Plotly.NET
 open Plotly.NET.LayoutObjects

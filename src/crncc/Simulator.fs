@@ -5,30 +5,26 @@ open CRN.AST
 
 let private getlhs =
     function
-    | ReactionS.Reaction(ExprS.Expr(lhs), _, _) -> lhs
+    | ReactionS.Reaction(lhs, _, _) -> lhs
 
 let private getrhs =
     function
-    | ReactionS.Reaction(_, ExprS.Expr(rhs), _) -> rhs
+    | ReactionS.Reaction(_, rhs, _) -> rhs
 
 let private getspeed =
     function
     | ReactionS.Reaction(_, _, speed) -> speed
 
-let private getname =
-    function
-    | ExprSpecies.Species name -> name
-
 // get all of the unique species
 let private getspecies reactions =
     match reactions with
-    | ReactionS.Reaction(ExprS.Expr(rhs), ExprS.Expr(lhs), _) -> rhs @ lhs |> set
+    | ReactionS.Reaction(rhs, lhs, _) -> rhs @ lhs |> set
 
 // count how many x species exist in the given reactions
 let rec private count x reactions =
     match reactions with
     | [] -> 0
-    | (Species y :: ys) when x = y -> 1 + (count x ys)
+    | (y :: ys) when x = y -> 1 + (count x ys)
     | (y :: ys) -> count x ys
 
 // get the change of the given species between lhs and rhs
@@ -75,16 +71,14 @@ module private Functional1 =
         List.fold (fun state m -> composeOde state m) (fun _ -> 0.0) odes
 
     let private odeof current lhs rhs speed : OdeEq =
-        let name = getname current
         let rhsthis = List.filter (fun elem -> elem = current) rhs
         // change indicates the multiplicity of the current element
-        let multiplicity = getchange lhs rhsthis name
+        let multiplicity = getchange lhs rhsthis current
 
 
         let ode' (Os: Map<string, float>) =
             let res =
                 lhs
-                |> List.map getname
                 |> List.map (fun spec -> Map.find spec Os)
                 |> List.fold (fun acc v -> acc * v) 1.0
 
@@ -104,7 +98,7 @@ module private Functional1 =
                     |> List.map (fun (lhs, rhs, speed) -> odeof one lhs rhs speed)
                     |> composeOdes
 
-                getname one, func)
+                one, func)
             |> Map.ofList
 
         { Eqs = m }
@@ -129,9 +123,13 @@ type eqmask_t = float array array
 module private Functional2 =
 
     let inline private applyrxn (arr: float array) (rxnmask: int array) : float =
+        let folder (acc: float) (elem: float, mask: int) =
+            if elem > 0 then
+                acc * pown elem mask
+            else
+                acc
         Array.zip arr rxnmask
-        |> Array.filter (fun (_, maskelem) -> maskelem > 0)
-        |> Array.fold (fun acc (elem, mask) -> acc * pown elem mask) 1.0
+        |> Array.fold folder 1.0
 
     let inline private composerxns (rxnresults: float array) (eqmask: float array) : float =
         Array.zip rxnresults eqmask
@@ -148,20 +146,20 @@ module private Functional2 =
     let internal forwardEuler input rxnmasks eqmasks time =
         let diff = differences input rxnmasks eqmasks
 
-        Array.zip input diff
-        |> Array.map (fun (cur, dif) -> (cur + dif * time))
+        Array.zip input diff |> Array.map (fun (cur, dif) -> (cur + dif * time))
 
 /// Imperative implementation of the ODE solver
 /// This implementation avoids most intermediate allocations and does all operations
-/// inside "hot loops" in the most direct way which will most likely result in the best 
+/// inside "hot loops" in the most direct way which will most likely result in the best
 /// possible performance.
-/// 
+///
 /// The other idea I had would be to metaprogram C code and call a C compiler, build it
 /// onto dynlib, link it at runtime and use shared memory to directly access unmanaged
 /// memory which would completely avoid allocations.
 module private Imperative =
-    /// arr: 1 x reactions
-    /// rxnmask: 1 x reactions
+    /// arr: 1 x reactions  
+    /// rxnmask: 1 x reactions  
+    /// Takes the product of the concentration of each species to their frequency in the lhs
     let inline private applyrxn (arr: float array) (rxnmask: int array) : float =
         let mutable ret = 1.0
 
@@ -173,9 +171,10 @@ module private Imperative =
 
     /// rxnresults: 1 x species
     /// eqmask: 1 x species
+    /// Dot products the results from applyrxn with the given equation mask
     let inline private composerxns (rxnresults: float array) (eqmask: float array) : float =
         let mutable ret = 0.0
-
+        
         for i in 0 .. rxnresults.Length - 1 do
             ret <- ret + rxnresults[i] * eqmask[i]
 
@@ -214,10 +213,19 @@ module private Imperative =
 
 // Common functions for Functional2, Imperative, Imperative2 solvers
 
+/// Create the reaction mask for a given reaction  
+/// The reaction mask is the frequency of each element on the left hand side a reaction
+/// On each step, we raise the actual concentration of each species to their frequency and take the product of
+/// all of them for each reaction
 let private createRXNmask (namelist: string list) (reaction: ReactionS) : int array =
     let lhs = getlhs reaction
     namelist |> List.map (fun name -> count name lhs) |> List.toArray
 
+/// Create the equation mask for a given reaction  
+/// The equation mask for each species is an array of floats which is the product of how much the species
+/// change per reaction and the reaction speed for that reaction.  
+/// On each step, we take the dot product of the mask with the outputs of the reaction mask for each species.  
+/// This gives us the change in concentration for that species.
 let private createEQmask (rxns: ReactionS list) (name: string) : float array =
     let oneeq name rxn =
         let (lhs, rhs, speed) = getlhs rxn, getrhs rxn, getspeed rxn

@@ -38,18 +38,16 @@ let private identifierOrReserved =
     let isChar c = isLetter c || isDigit c || c = '_'
     (notFollowedBy reservedNames) >>. many1Satisfy2L isFirstChar isChar "identifier" .>> ws
 
-let private pspecies = identifier |>> SpeciesS
-let private pspeciesRes = identifierOrReserved |>> SpeciesS
+let private pspecies = identifier 
+let private pspeciesRes = identifierOrReserved
 
 let private pconst = identifier
 
 let private pnumber = float_ws
+let private pspecies2Reserved = identifierOrReserved
 
-let private pspecies2 = identifier |>> ExprSpecies.Species
-let private pspecies2Reserved = identifierOrReserved |>> ExprSpecies.Species
-
-let private pexpr = sepBy pspecies2 (str_ws "+") |>> ExprS.Expr
-let private pexprReserved = sepBy pspecies2Reserved (str_ws "+") |>> ExprS.Expr
+let private pexpr = sepBy pspecies (str_ws "+")
+let private pexprReserved = sepBy pspecies2Reserved (str_ws "+")
 
 let private start_bracket bcopen start = str_ws start .>> str_ws bcopen
 
@@ -107,6 +105,8 @@ let private listparser popen pclose listelem =
 
 let private pcon, pconref = createParserForwardedToRef<'a, 'u> ()
 
+#nowarn "64"
+// Code is less generic than expected, but we do not care about genericity here
 let private pcommand =
     choice
         [ pmodule |>> CommandS.Module

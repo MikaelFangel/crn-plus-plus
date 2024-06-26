@@ -5,12 +5,13 @@ open AST
 /// Type errors are a series of strings
 type TypeError = string
 
+/// Type to check conditions are non-overlapping
 type private Condition =
     | G
     | E
     | L
 
-/// This is the same as the TypingEnv type but also keeps track of dangling references
+/// Similar to the TypingEnv type but stores additional information relevant for local type checking
 type private TypingEnv' =
     {
         /// All species have to be defined before use and appear on the left side
@@ -21,7 +22,7 @@ type private TypingEnv' =
         Dangling: Set<string>
         /// Values can only be mutated at one part inside a step
         Mutated: Set<string>
-        ///
+        /// Conditions must be non-overlapping
         Conditions: Set<Condition>
     }
 
@@ -91,7 +92,7 @@ let private checkmutation name env =
 let rec private exprtyperleft env expr =
     match expr with
     | [] -> Ok(env)
-    | Species(head) :: tail ->
+    | head :: tail ->
         let env = resolvereference head env
         exprtyperleft env tail
 
@@ -100,7 +101,7 @@ let rec private exprtyperleft env expr =
 let rec private exprtyperright env expr =
     match expr with
     | [] -> Ok(env)
-    | Species(head) :: tail ->
+    | head :: tail ->
         let env' = addreference head env
         exprtyperright env' tail
 
@@ -108,8 +109,8 @@ let rec private exprtyperright env expr =
 let private reactiontyper env reaction =
     match reaction with
     | ReactionS.Reaction(_, _, speed) when speed <= 0.0 -> [ reactionSpeedError speed ] |> Error
-    | ReactionS.Reaction(ExprS.Expr [], _, _) -> [ immaculateConceptionError () ] |> Error
-    | ReactionS.Reaction(ExprS.Expr expr1, ExprS.Expr expr2, _) ->
+    | ReactionS.Reaction([], _, _) -> [ immaculateConceptionError () ] |> Error
+    | ReactionS.Reaction(expr1, expr2, _) ->
         exprtyperleft env expr1 |> Result.bind (fun env -> exprtyperright env expr2)
 
 /// Modules should not have lhs species appearing in the target
@@ -187,21 +188,21 @@ and private steptyper env steps =
     let rec steptyper' env steps =
         match steps with
         | [] -> Ok(env)
-        | Reaction(reaction) :: tail -> reactiontyper env reaction |> Result.bind (fun env -> steptyper' env tail)
-        | Module(m') :: tail -> moduletyper env m' |> Result.bind (fun env -> steptyper' env tail)
+        | CommandS.Reaction(reaction) :: tail -> reactiontyper env reaction |> Result.bind (fun env -> steptyper' env tail)
+        | CommandS.Module(m') :: tail -> moduletyper env m' |> Result.bind (fun env -> steptyper' env tail)
         | _ -> [ conditionOrElseError () ] |> Error
 
     let rec steptyper'' env steps =
         match steps with
         | [] -> Ok({ env with Conditions = Set.empty })
-        | Condition(cond) :: tail -> conditiontyper env cond |> Result.bind (fun env -> steptyper'' env tail)
+        | CommandS.Condition(cond) :: tail -> conditiontyper env cond |> Result.bind (fun env -> steptyper'' env tail)
         | _ -> [ conditionOrElseError () ] |> Error
 
     match steps with
     | [] -> Ok(env)
-    | Reaction(_) :: _
-    | Module(_) :: _ -> steptyper' env steps
-    | Condition(_) :: _ -> steptyper'' env steps
+    | CommandS.Reaction(_) :: _
+    | CommandS.Module(_) :: _ -> steptyper' env steps
+    | CommandS.Condition(_) :: _ -> steptyper'' env steps
 
 /// Concentrations must not include multiple definitions
 /// Right hand side value must be a number or a "constant" that
