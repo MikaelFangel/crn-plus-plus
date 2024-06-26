@@ -48,7 +48,7 @@ let ``Compiler: division`` (a:PositiveInt, b:PositiveInt) =
         let result = Result.bind (fun x -> Ok (compile (Map.ofList [("a0", a);("b0",b)]) x)) result
         match result with 
         | Error a -> Prop.classify true "Error" (Result.isOk result)
-        | Ok s ->   let simulated = convertOut (fst s) 0.025 (snd s)
+        | Ok s ->   let simulated = convertOut (fst s) 0.01 (snd s)
                     let quot = float (a / b)
                     let res = float (a % b)
                     let existsState = (Seq.take 150000 simulated) |> Seq.exists (fun map ->  abs (Map.find "q" map - quot) <= 0.5
