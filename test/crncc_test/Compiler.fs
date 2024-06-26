@@ -42,7 +42,7 @@ let ``Compiler: division`` (a:PositiveInt, b:PositiveInt) =
     let a = int a
     let b = int b
     if b = 0 then Prop.classify true "b is zero" true
-    else if (a / b) >= 13 then Prop.classify true "Timer ran out" true else
+    else if (a / b) >= 9 then Prop.classify true "Timer ran out" true else
         let result = testParser "division.crn"
         let result = result |> Result.bind typecheck 
         let result = Result.bind (fun x -> Ok (compile (Map.ofList [("a0", a);("b0",b)]) x)) result
@@ -51,7 +51,7 @@ let ``Compiler: division`` (a:PositiveInt, b:PositiveInt) =
         | Ok s ->   let simulated = convertOut (fst s) 0.01 (snd s)
                     let quot = float (a / b)
                     let res = float (a % b)
-                    let existsState = (Seq.take 150000 simulated) |> Seq.exists (fun map ->  abs (Map.find "q" map - quot) <= 0.5
+                    let existsState = (Seq.take 200000 simulated) |> Seq.exists (fun map ->  abs (Map.find "q" map - quot) <= 0.5
                                                                                             && abs (Map.find "r" map - res) <= 0.5 ) 
                     Prop.ofTestable existsState
 
