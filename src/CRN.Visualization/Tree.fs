@@ -93,9 +93,9 @@ let rec private astToTree' (node: ASTNode) =
         Node("step", nodes)
     | NCommandS(command) ->
         match command with
-        | Reaction reaction -> Node("rxn", [astToTree' (NReactionS reaction)]) 
-        | Module modl -> Node("mod", [astToTree' (NModuleS modl)])
-        | Condition condition   -> Node("cond", [astToTree' (NConditionS condition)])
+        | CommandS.Reaction reaction -> Node("rxn", [astToTree' (NReactionS reaction)]) 
+        | CommandS.Module modl -> Node("mod", [astToTree' (NModuleS modl)])
+        | CommandS.Condition condition   -> Node("cond", [astToTree' (NConditionS condition)])
     | NConditionS (condition) ->
         let name =
             match condition with

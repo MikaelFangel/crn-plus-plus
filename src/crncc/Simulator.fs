@@ -157,8 +157,9 @@ module private Functional2 =
 /// onto dynlib, link it at runtime and use shared memory to directly access unmanaged
 /// memory which would completely avoid allocations.
 module private Imperative =
-    /// arr: 1 x reactions
-    /// rxnmask: 1 x reactions
+    /// arr: 1 x reactions  
+    /// rxnmask: 1 x reactions  
+    /// Takes the product of the concentration of each species to their frequency in the lhs
     let inline private applyrxn (arr: float array) (rxnmask: int array) : float =
         let mutable ret = 1.0
 
@@ -170,9 +171,10 @@ module private Imperative =
 
     /// rxnresults: 1 x species
     /// eqmask: 1 x species
+    /// Dot products the results from applyrxn with the given equation mask
     let inline private composerxns (rxnresults: float array) (eqmask: float array) : float =
         let mutable ret = 0.0
-
+        
         for i in 0 .. rxnresults.Length - 1 do
             ret <- ret + rxnresults[i] * eqmask[i]
 
@@ -211,10 +213,19 @@ module private Imperative =
 
 // Common functions for Functional2, Imperative, Imperative2 solvers
 
+/// Create the reaction mask for a given reaction  
+/// The reaction mask is the frequency of each element on the left hand side a reaction
+/// On each step, we raise the actual concentration of each species to their frequency and take the product of
+/// all of them for each reaction
 let private createRXNmask (namelist: string list) (reaction: ReactionS) : int array =
     let lhs = getlhs reaction
     namelist |> List.map (fun name -> count name lhs) |> List.toArray
 
+/// Create the equation mask for a given reaction  
+/// The equation mask for each species is an array of floats which is the product of how much the species
+/// change per reaction and the reaction speed for that reaction.  
+/// On each step, we take the dot product of the mask with the outputs of the reaction mask for each species.  
+/// This gives us the change in concentration for that species.
 let private createEQmask (rxns: ReactionS list) (name: string) : float array =
     let oneeq name rxn =
         let (lhs, rhs, speed) = getlhs rxn, getrhs rxn, getspeed rxn

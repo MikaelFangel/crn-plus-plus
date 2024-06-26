@@ -81,7 +81,8 @@ type ConditionS =
                 | Lt(lst) -> conditionString "ifLT" lst
                 | Le(lst) -> conditionString "ifLE" lst
 
-and CommandS =
+and [<RequireQualifiedAccess>]
+CommandS =
     | Reaction of ReactionS
     | Module of ModuleS
     | Condition of ConditionS

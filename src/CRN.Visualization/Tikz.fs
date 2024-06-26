@@ -63,11 +63,12 @@ let private preamble = "\\begin{tikzpicture}\n"
 let private postamble = "\\end{tikzpicture}\n"
 
 /// Returns a latex string that draws the graph using basic Tikz commands
-let drawTree design =
+let internal drawTree design =
     let (postree, _) = design
     let all = [preamble] @ (drawTree' postree 0.0 0.0) @ [postamble] 
     all
     |> String.concat ""
 
+/// Take an AST and return a tree representation of it
 let drawAST ast =
     ast |> astToTree |> design |> drawTree
