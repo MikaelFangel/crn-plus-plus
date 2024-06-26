@@ -51,7 +51,6 @@ let ``Compiler: division`` (a:PositiveInt, b:PositiveInt) =
         | Ok s ->   let simulated = convertOut (fst s) 0.025 (snd s)
                     let quot = float (a / b)
                     let res = float (a % b)
-                    printf "a: %A b: %A q: %A r: %A" a b quot res
                     let existsState = (Seq.take 150000 simulated) |> Seq.exists (fun map ->  abs (Map.find "q" map - quot) <= 0.5
                                                                                             && abs (Map.find "r" map - res) <= 0.5 ) 
                     Prop.ofTestable existsState
