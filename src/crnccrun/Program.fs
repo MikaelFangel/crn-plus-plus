@@ -149,9 +149,9 @@ let runSimulator opts =
     match typedAst with
     | Ok env ->
         let (env, rxn) = compile constmap env
-        let sim = solveODE env 0.01 rxn
+        let names, sim = solveODEFast env 0.01 rxn
         let species = opts.names.Split(";") |> Seq.ofArray |> Seq.filter (fun s -> s <> "")
-
+        let converter = ArraytoMap names 
         if opts.plot then
             plotState
                 (fun s ->
@@ -160,7 +160,7 @@ let runSimulator opts =
                     else
                         species |> Seq.contains s)
                 opts.steps
-                sim
+                (Seq.map converter sim)
         else
             printfn "%A" sim
 
